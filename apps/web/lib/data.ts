@@ -1,5 +1,11 @@
 import { desc, eq, inArray } from "drizzle-orm";
-import { identityTimeline, type Activity } from "@elevo/engine";
+import {
+  identityTimeline,
+  computeMetrics,
+  predictRaces,
+  explainAttributes,
+  type Activity,
+} from "@elevo/engine";
 import { db } from "./db";
 import { activities, assessorias, athleteProfiles, scoreSnapshots, users } from "./db/schema";
 import type { AthleteStatus } from "./types";
@@ -178,6 +184,10 @@ export async function getAthleteDetail(userId: string) {
     .sort((a, b) => a.start.getTime() - b.start.getTime());
 
   const timeline = identityTimeline(cleanActs);
+  const now = new Date();
+  const metrics = computeMetrics(cleanActs, now);
+  const predictions = predictRaces(metrics.bestPaceMinKm);
+  const explanations = explainAttributes(cleanActs, now);
 
   return {
     userId,
@@ -200,6 +210,9 @@ export async function getAthleteDetail(userId: string) {
     cleanCount: cleanActs.length,
     calibrating: cleanActs.length > 0 && cleanActs.length < 8,
     timeline,
+    metrics,
+    predictions,
+    explanations,
   };
 }
 

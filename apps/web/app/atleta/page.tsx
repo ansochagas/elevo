@@ -5,9 +5,7 @@ import { getAthleteDetail } from "@/lib/data";
 import { AreaChart } from "@/components/charts";
 import { BottomNav } from "@/components/athlete/BottomNav";
 import { UploadButton } from "@/components/UploadButton";
-import { ATTR_LABEL, type AthAttrKey } from "@/lib/athlete";
-
-const ATTR_ORDER: AthAttrKey[] = ["ritmo", "resistencia", "regularidade", "finalizacao", "subida", "evolucao"];
+import { NumbersBlock, RecordsBlock, PredictionsBlock, ExplainedAttributes } from "@/components/Kpis";
 
 export default async function AtletaPage() {
   const session = await auth();
@@ -90,27 +88,34 @@ export default async function AtletaPage() {
             </section>
           ) : null}
 
+          <section className="acard">
+            <h3>Seus números</h3>
+            <NumbersBlock m={a.metrics} />
+            {a.metrics.records.length > 0 ? (
+              <div style={{ marginTop: 16 }}>
+                <h3>Recordes</h3>
+                <RecordsBlock m={a.metrics} />
+              </div>
+            ) : null}
+          </section>
+
           {attrs && !a.calibrating ? (
             <section className="acard">
-              <h3>Atributos</h3>
-              <div className="abars tnum">
-                {ATTR_ORDER.map((k) => {
-                  const v = attrs[k];
-                  return (
-                    <div className="ab" key={k}>
-                      <span className="l">{ATTR_LABEL[k]}</span>
-                      <span className="t"><span className="f" style={{ width: `${v ?? 0}%` }} /></span>
-                      <span className="val">{v ?? "—"}</span>
-                    </div>
-                  );
-                })}
-              </div>
+              <h3>Atributos — e o porquê de cada um</h3>
+              <ExplainedAttributes attrs={attrs} explanations={a.explanations} />
+            </section>
+          ) : null}
+
+          {a.predictions.length > 0 && !a.calibrating ? (
+            <section className="acard">
+              <h3>Se você fosse correr uma prova hoje</h3>
+              <PredictionsBlock predictions={a.predictions} />
             </section>
           ) : null}
 
           {a.timeline.length >= 2 && !a.calibrating ? (
             <section className="acard aevo">
-              <h3>Evolução</h3>
+              <h3>Evolução do score</h3>
               <AreaChart points={a.timeline.map((t) => t.smoothed)} color="var(--ac)" label="Evolução do seu Runner Score" />
             </section>
           ) : null}

@@ -36,5 +36,13 @@ export {
   CALIBRATION_MIN_ACTIVITIES,
   type TimelinePoint,
 } from "./score.ts";
+export {
+  computeMetrics,
+  predictRaces,
+  explainAttributes,
+  type RunnerMetrics,
+  type PersonalRecord,
+  type MonthBucket,
+} from "./metrics.ts";
 export { lerp, median, mean, percentile, clampScore, type Anchor } from "./math.ts";
 export { haversineM } from "./geo.ts";

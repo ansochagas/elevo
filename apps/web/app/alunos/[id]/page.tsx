@@ -6,9 +6,7 @@ import { regenerateInvite, unlinkAthlete, updateAthlete } from "@/lib/actions";
 import { CoachShell } from "@/components/CoachShell";
 import { UploadButton } from "@/components/UploadButton";
 import { AreaChart } from "@/components/charts";
-import { ATTR_LABEL, type AthAttrKey } from "@/lib/athlete";
-
-const ATTR_ORDER: AthAttrKey[] = ["ritmo", "resistencia", "regularidade", "finalizacao", "subida", "evolucao"];
+import { NumbersBlock, RecordsBlock, ExplainedAttributes } from "@/components/Kpis";
 
 const fmtDate = (d: Date) =>
   d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
@@ -115,22 +113,24 @@ export default async function AlunoDetalhePage({
         <UploadButton targetUserId={a.userId} label="Enviar corridas por ele" />
       </div>
 
+      {a.cleanCount > 0 ? (
+        <div className="panel" style={{ marginBottom: 14 }}>
+          <div className="ph"><h2>Números de {a.name.split(" ")[0]}</h2></div>
+          <NumbersBlock m={a.metrics} />
+          {a.metrics.records.length > 0 ? (
+            <div style={{ marginTop: 16 }}>
+              <div className="ph"><h2>Recordes</h2></div>
+              <RecordsBlock m={a.metrics} />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
       {attrs && !a.calibrating ? (
         <div className="grid" style={{ marginBottom: 14 }}>
           <div className="panel">
-            <div className="ph"><h2>Atributos</h2></div>
-            <div className="abars tnum">
-              {ATTR_ORDER.map((k) => {
-                const v = attrs[k];
-                return (
-                  <div className="ab" key={k}>
-                    <span className="l">{ATTR_LABEL[k]}</span>
-                    <span className="t"><span className="f" style={{ width: `${v ?? 0}%` }} /></span>
-                    <span className="val">{v ?? "—"}</span>
-                  </div>
-                );
-              })}
-            </div>
+            <div className="ph"><h2>Atributos — e o porquê de cada um</h2></div>
+            <ExplainedAttributes attrs={attrs} explanations={a.explanations} />
           </div>
           <div className="panel evo">
             <div className="ph"><h2>Evolução</h2></div>
