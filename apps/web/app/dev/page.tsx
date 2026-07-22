@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { ingestFiles, type IngestFile } from "@/lib/ingest";
+import { DevUploadTest } from "@/components/DevUploadTest";
 
 /** Página DEV-ONLY: ingere o export local do fundador para o atleta piloto. */
 export default async function DevPage({
@@ -17,6 +18,7 @@ export default async function DevPage({
   const session = await auth();
   if (!session?.user) redirect("/login");
   const { done } = await searchParams;
+  const alvo = await db.select().from(users).where(eq(users.email, "atleta@elevo.app")).limit(1);
 
   async function ingest() {
     "use server";
@@ -40,6 +42,7 @@ export default async function DevPage({
         <form action={ingest}>
           <button className="btnp" type="submit">Ingerir export local → atleta piloto</button>
         </form>
+        {alvo[0] ? <DevUploadTest targetUserId={alvo[0].id} /> : null}
       </div>
     </main>
   );
