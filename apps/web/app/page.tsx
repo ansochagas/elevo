@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { getAssessoriaOf, getAthletesOf, type RealAthlete } from "@/lib/data";
+import { getAssessoriaOf, getAthletesOf, getTeamVolume, type RealAthlete } from "@/lib/data";
 import { CoachShell } from "@/components/CoachShell";
+import { WeeklyVolumeChart } from "@/components/charts";
+
+const km1 = (n: number) => n.toFixed(n >= 100 ? 0 : 1).replace(".", ",");
 
 const DAY = 86_400_000;
 
@@ -41,6 +44,8 @@ export default async function PainelPage() {
   if (!assessoria) redirect("/login");
 
   const athletes = await getAthletesOf(assessoria.id);
+  const teamVol = await getTeamVolume(assessoria.id);
+  const volDelta = teamVol.kmThisWeek - teamVol.kmLastWeek;
   const withData = athletes.filter((a) => a.cleanCount > 0);
   const ativos = athletes.filter(
     (a) => a.lastRunAt && Date.now() - a.lastRunAt.getTime() <= 7 * DAY,
@@ -101,6 +106,21 @@ export default async function PainelPage() {
                 <div className="k">Score médio da turma</div>
                 <div className="v">{avgScore}</div>
                 <div className="d flat">{scored.length} com score</div>
+              </div>
+            ) : null}
+            {teamVol.hasData ? (
+              <div className="kpi">
+                <div className="k">Volume da turma (semana)</div>
+                <div className="v">
+                  {km1(teamVol.kmThisWeek)}<span className="u">km</span>
+                </div>
+                {teamVol.kmLastWeek > 0 ? (
+                  <div className={`d ${volDelta >= 0 ? "up" : "warn"}`}>
+                    {volDelta >= 0 ? "+" : ""}{km1(volDelta)} km vs. semana passada
+                  </div>
+                ) : (
+                  <div className="d flat">{teamVol.runnersThisWeek} correndo · {teamVol.runsThisWeek} corridas</div>
+                )}
               </div>
             ) : null}
           </div>
@@ -168,6 +188,16 @@ export default async function PainelPage() {
                   </>
                 )}
               </div>
+              {teamVol.hasData ? (
+                <div className="panel">
+                  <div className="ph"><h2>Volume de treino · turma</h2></div>
+                  <WeeklyVolumeChart weeks={teamVol.weeks} label={`Volume semanal da ${assessoria.name}`} />
+                  <p className="uplmsg" style={{ marginTop: 4 }}>
+                    Km somados de toda a turma por semana. Volume é o que mais move a evolução — quedas
+                    seguidas costumam anteceder queda de resultado.
+                  </p>
+                </div>
+              ) : null}
               <div className="panel">
                 <div className="ph"><h2>Ações rápidas</h2></div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

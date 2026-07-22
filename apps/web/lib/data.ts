@@ -6,8 +6,10 @@ import {
   explainAttributes,
   focusArea,
   attributeChanges,
+  teamWeeklyVolume,
   type Activity,
   type AttributeKey,
+  type WeekVolume,
 } from "@elevo/engine";
 import { db } from "./db";
 import { activities, assessorias, athleteProfiles, scoreSnapshots, users } from "./db/schema";
@@ -132,6 +134,59 @@ export async function getAthletesOf(assessoriaId: string): Promise<RealAthlete[]
     };
     return { ...base, status: statusOf(base) };
   });
+}
+
+export interface TeamVolume {
+  weeks: WeekVolume[];
+  kmThisWeek: number;
+  kmLastWeek: number;
+  runsThisWeek: number;
+  runnersThisWeek: number;
+  activeAthletes: number;
+  hasData: boolean;
+}
+
+/** Volume de treino AGREGADO da turma — carga da assessoria semana a semana. */
+export async function getTeamVolume(assessoriaId: string, weeks = 8): Promise<TeamVolume> {
+  const empty: TeamVolume = {
+    weeks: [], kmThisWeek: 0, kmLastWeek: 0, runsThisWeek: 0,
+    runnersThisWeek: 0, activeAthletes: 0, hasData: false,
+  };
+  const profs = await db
+    .select({ userId: athleteProfiles.userId })
+    .from(athleteProfiles)
+    .where(eq(athleteProfiles.assessoriaId, assessoriaId));
+  if (profs.length === 0) return empty;
+  const ids = profs.map((p) => p.userId);
+
+  const since = new Date(Date.now() - (weeks + 1) * 7 * DAY);
+  const acts = await db
+    .select({
+      userId: activities.userId,
+      start: activities.start,
+      distanceKm: activities.distanceKm,
+      flaggedReason: activities.flaggedReason,
+    })
+    .from(activities)
+    .where(inArray(activities.userId, ids));
+
+  const clean = acts
+    .filter((a) => !a.flaggedReason && a.start >= since)
+    .map((a) => ({ start: a.start, distanceKm: a.distanceKm, userId: a.userId }));
+  if (clean.length === 0) return { ...empty };
+
+  const buckets = teamWeeklyVolume(clean, new Date(), weeks);
+  const cur = buckets[buckets.length - 1] ?? null;
+  const prev = buckets[buckets.length - 2] ?? null;
+  return {
+    weeks: buckets,
+    kmThisWeek: cur?.km ?? 0,
+    kmLastWeek: prev?.km ?? 0,
+    runsThisWeek: cur?.runs ?? 0,
+    runnersThisWeek: cur?.runners ?? 0,
+    activeAthletes: new Set(clean.map((a) => a.userId)).size,
+    hasData: true,
+  };
 }
 
 /** Dados completos de um atleta (para o perfil individual e o app do atleta). */

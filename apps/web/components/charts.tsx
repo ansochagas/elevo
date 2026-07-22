@@ -124,6 +124,62 @@ export function EvolutionChart({ points, label }: { points: EvoPoint[]; label?: 
   );
 }
 
+interface WeekBar {
+  weekStartMs: number;
+  km: number;
+  runners?: number;
+}
+
+/**
+ * Barras de volume semanal da turma — leitura de carga ao longo de ~8 semanas.
+ * Última barra destacada; rótulos só nas pontas para não poluir.
+ */
+export function WeeklyVolumeChart({ weeks, label }: { weeks: WeekBar[]; label?: string }) {
+  if (weeks.length === 0) return null;
+  const W = 320;
+  const H = 132;
+  const padT = 14;
+  const padB = 22;
+  const padL = 4;
+  const padR = 4;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+  const maxKm = Math.max(...weeks.map((w) => w.km), 1);
+  const slot = plotW / weeks.length;
+  const barW = Math.min(28, slot * 0.6);
+  const fmtWk = (ms: number) => {
+    const d = new Date(ms);
+    return `${String(d.getUTCDate()).padStart(2, "0")}/${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+  };
+  const labelIdx = [0, Math.floor((weeks.length - 1) / 2), weeks.length - 1];
+
+  return (
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} fill="none" role="img" aria-label={label ?? "Volume semanal da turma"} className="wkchart">
+      <line x1={padL} y1={padT + plotH} x2={W - padR} y2={padT + plotH} stroke="var(--dv)" strokeWidth={1} />
+      {weeks.map((w, i) => {
+        const h = (w.km / maxKm) * plotH;
+        const x = padL + i * slot + (slot - barW) / 2;
+        const y = padT + plotH - h;
+        const isLast = i === weeks.length - 1;
+        return (
+          <g key={w.weekStartMs}>
+            <rect x={x} y={y} width={barW} height={Math.max(h, 1)} rx={3}
+              fill="var(--ac)" opacity={isLast ? 1 : 0.32} />
+            {isLast && w.km > 0 ? (
+              <text x={x + barW / 2} y={y - 5} textAnchor="middle" className="wkval">{Math.round(w.km)}</text>
+            ) : null}
+          </g>
+        );
+      })}
+      {labelIdx.map((i) => (
+        <text key={i} x={padL + i * slot + slot / 2} y={H - 6} textAnchor="middle" className="wklbl">
+          {fmtWk(weeks[i]!.weekStartMs)}
+        </text>
+      ))}
+    </svg>
+  );
+}
+
 interface AreaChartProps {
   points: number[];
   color: string;

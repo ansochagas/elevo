@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeMetrics, predictRaces, explainAttributes, attributeTier, focusArea, attributeChanges } from "../src/metrics.ts";
+import { computeMetrics, predictRaces, explainAttributes, attributeTier, focusArea, attributeChanges, teamWeeklyVolume } from "../src/metrics.ts";
 import { run } from "./helpers.ts";
 
 const D = (s: string) => new Date(`${s}T12:00:00`);
@@ -81,6 +81,36 @@ describe("tier / foco / mudanças", () => {
   });
   it("sem snapshot anterior, nada muda", () => {
     expect(attributeChanges({ ritmo: 50 }, null).improved).toHaveLength(0);
+  });
+});
+
+describe("teamWeeklyVolume", () => {
+  it("agrega km/corridas/atletas por semana da turma", () => {
+    const acts = [
+      // semana atual (31/03 = seg): 2 atletas
+      { start: D("2025-03-31"), distanceKm: 10, userId: "a" },
+      { start: D("2025-04-01"), distanceKm: 5, userId: "b" },
+      { start: D("2025-04-02"), distanceKm: 8, userId: "a" },
+      // semana anterior: 1 atleta
+      { start: D("2025-03-25"), distanceKm: 6, userId: "a" },
+      // fora da janela (bem antiga) — ignorada
+      { start: D("2024-01-01"), distanceKm: 99, userId: "z" },
+    ];
+    const w = teamWeeklyVolume(acts, NOW, 4);
+    expect(w).toHaveLength(4);
+    const cur = w[w.length - 1]!;
+    expect(cur.km).toBeCloseTo(23);
+    expect(cur.runs).toBe(3);
+    expect(cur.runners).toBe(2); // a e b
+    const prev = w[w.length - 2]!;
+    expect(prev.km).toBeCloseTo(6);
+    expect(prev.runners).toBe(1);
+    expect(w.every((b) => typeof b.weekStartMs === "number")).toBe(true);
+  });
+  it("turma sem corridas retorna semanas zeradas", () => {
+    const w = teamWeeklyVolume([], NOW, 6);
+    expect(w).toHaveLength(6);
+    expect(w.every((b) => b.km === 0 && b.runners === 0)).toBe(true);
   });
 });
 

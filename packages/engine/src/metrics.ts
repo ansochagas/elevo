@@ -219,6 +219,43 @@ export function explainAttributes(clean: readonly Activity[], now: Date): Record
   return out;
 }
 
+export interface WeekVolume {
+  /** segunda-feira (UTC) que abre a semana, em ms */
+  weekStartMs: number;
+  km: number;
+  runs: number;
+  /** atletas distintos que correram na semana */
+  runners: number;
+}
+
+/**
+ * Volume semanal AGREGADO da turma nas últimas `weeks` semanas (mais antiga → atual).
+ * Trabalha sobre atividades já limpas de vários atletas (cada uma com userId).
+ * Usa a mesma fronteira de semana (segunda, UTC) do streak individual.
+ */
+export function teamWeeklyVolume(
+  acts: readonly { start: Date; distanceKm: number; userId: string }[],
+  now: Date,
+  weeks = 8,
+): WeekVolume[] {
+  const nowWeek = weekKey(now);
+  const buckets = new Map<number, { km: number; runs: number; users: Set<string> }>();
+  for (let i = weeks - 1; i >= 0; i--) {
+    buckets.set(nowWeek - i * 7 * DAY, { km: 0, runs: 0, users: new Set<string>() });
+  }
+  for (const a of acts) {
+    const b = buckets.get(weekKey(a.start));
+    if (b) {
+      b.km += a.distanceKm;
+      b.runs++;
+      b.users.add(a.userId);
+    }
+  }
+  return [...buckets.entries()]
+    .sort((x, y) => x[0] - y[0])
+    .map(([weekStartMs, b]) => ({ weekStartMs, km: b.km, runs: b.runs, runners: b.users.size }));
+}
+
 /** Faixa qualitativa de um atributo 0-100 (dá significado à nota). */
 export function attributeTier(score: number): string {
   if (score >= 83) return "Avançado";
