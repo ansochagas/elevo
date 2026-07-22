@@ -372,3 +372,34 @@ td.r { text-align: right; }
 /* barras de volume semanal da turma */
 .wkchart .wklbl { font-size: 9px; fill: var(--t3); }
 .wkchart .wkval { font-size: 11px; font-weight: 700; fill: var(--ac); }
+
+/* ---- Apresentação em telas largas (desktop) — DEVE ficar no fim para vencer
+   as regras-base de .ashell/.pubwrap/.reveal. O app do atleta é mobile-first;
+   no desktop, emoldura como um "app" centrado sobre um fundo. ---- */
+@media (min-width: 720px) {
+  body { background: radial-gradient(1100px 720px at 50% -8%, #10201b 0%, var(--bg) 58%); }
+  .ashell, .pubwrap, .reveal {
+    max-width: 500px;
+    min-height: auto;
+    margin: 32px auto;
+    padding-left: 28px;
+    padding-right: 28px;
+    border: 1px solid var(--bd);
+    border-radius: 26px;
+    background: var(--s1);
+    box-shadow: 0 30px 80px rgba(0,0,0,.5);
+    overflow: hidden;
+  }
+  .ashell { padding-bottom: 20px; }
+  .pubwrap, .reveal { padding-top: 28px; padding-bottom: 28px; }
+  /* dentro da moldura, os cards ganham contraste sobre o painel */
+  .ashell .acard { background: #0c0f13; }
+  /* a barra de navegação deixa de flutuar e ancora no rodapé do painel */
+  .anav {
+    position: static;
+    max-width: none;
+    margin: 18px -28px -20px;
+    border-bottom-left-radius: 26px;
+    border-bottom-right-radius: 26px;
+  }
+}
