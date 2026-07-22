@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeMetrics, predictRaces, explainAttributes, attributeTier, focusArea, attributeChanges, teamWeeklyVolume, runnerLevel, runnerArchetype } from "../src/metrics.ts";
+import { computeMetrics, predictRaces, explainAttributes, attributeTier, focusArea, attributeChanges, teamWeeklyVolume, runnerLevel, runnerArchetype, loadTrend } from "../src/metrics.ts";
 import { run } from "./helpers.ts";
 
 const D = (s: string) => new Date(`${s}T12:00:00`);
@@ -144,6 +144,49 @@ describe("runnerArchetype", () => {
   });
   it("dados de menos → null", () => {
     expect(runnerArchetype({ ritmo: 50, resistencia: 52 })).toBeNull();
+  });
+});
+
+describe("loadTrend", () => {
+  it("marca 'parado' sem corridas há 7+ dias", () => {
+    const t = loadTrend([run({ date: D("2025-03-20"), km: 5, paceMinKm: 6 })], NOW);
+    expect(t.status).toBe("parado");
+    expect(t.note).toMatch(/11 dias/);
+  });
+  it("marca 'subindo-rapido' quando a semana pula acima da média", () => {
+    const acts = [
+      run({ date: D("2025-03-28"), km: 15, paceMinKm: 6 }), // semana atual, forte
+      run({ date: D("2025-03-20"), km: 5, paceMinKm: 6 }),
+      run({ date: D("2025-03-13"), km: 5, paceMinKm: 6 }),
+      run({ date: D("2025-03-06"), km: 5, paceMinKm: 6 }),
+    ];
+    const t = loadTrend(acts, NOW);
+    expect(t.status).toBe("subindo-rapido");
+    expect(t.ratio).toBeGreaterThanOrEqual(1.5);
+  });
+  it("marca 'caindo' quando a semana despenca vs. a média", () => {
+    const acts = [
+      run({ date: D("2025-03-29"), km: 1, paceMinKm: 6 }), // semana atual, fraca
+      run({ date: D("2025-03-18"), km: 10, paceMinKm: 6 }),
+      run({ date: D("2025-03-11"), km: 10, paceMinKm: 6 }),
+      run({ date: D("2025-03-05"), km: 10, paceMinKm: 6 }),
+    ];
+    const t = loadTrend(acts, NOW);
+    expect(t.status).toBe("caindo");
+  });
+  it("atleta novo/pouco volume não alarma", () => {
+    const t = loadTrend([run({ date: D("2025-03-29"), km: 2, paceMinKm: 6 })], NOW);
+    expect(t.status).toBe("estavel");
+  });
+  it("nota nunca menciona lesão nem prescreve", () => {
+    const acts = [
+      run({ date: D("2025-03-28"), km: 15, paceMinKm: 6 }),
+      run({ date: D("2025-03-20"), km: 5, paceMinKm: 6 }),
+      run({ date: D("2025-03-13"), km: 5, paceMinKm: 6 }),
+      run({ date: D("2025-03-06"), km: 5, paceMinKm: 6 }),
+    ];
+    const t = loadTrend(acts, NOW);
+    expect(t.note.toLowerCase()).not.toMatch(/lesão|reduza|diminua|descanse|pare/);
   });
 });
 

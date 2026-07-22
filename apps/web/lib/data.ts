@@ -9,9 +9,11 @@ import {
   teamWeeklyVolume,
   runnerLevel,
   runnerArchetype,
+  loadTrend,
   type Activity,
   type AttributeKey,
   type WeekVolume,
+  type LoadTrend,
 } from "@elevo/engine";
 import { db } from "./db";
 import { activities, assessorias, athleteProfiles, scoreSnapshots, users } from "./db/schema";
@@ -38,6 +40,7 @@ export interface RealAthlete {
   lastRunKm: number | null;
   cleanCount: number;
   calibrating: boolean;
+  load: LoadTrend;
   status: AthleteStatus | "sem-dados";
 }
 
@@ -154,6 +157,7 @@ export async function getAthletesOf(assessoriaId: string): Promise<RealAthlete[]
       lastRunKm: lastRun?.distanceKm ?? null,
       cleanCount: myClean.length,
       calibrating: myClean.length > 0 && myClean.length < 8,
+      load: loadTrend(myClean, new Date()),
     };
     return { ...base, status: statusOf(base) };
   });
@@ -327,6 +331,7 @@ export async function getAthleteDetail(userId: string) {
   const metrics = computeMetrics(cleanActs, now);
   const predictions = predictRaces(metrics.bestPaceMinKm);
   const explanations = explainAttributes(cleanActs, now);
+  const load = loadTrend(cleanActs, now);
 
   const latestAttrs = (latest?.attributes as Partial<Record<AttributeKey, number | null>>) ?? {};
   const prevAttrs = (prev?.attributes as Partial<Record<AttributeKey, number | null>>) ?? null;
@@ -363,6 +368,7 @@ export async function getAthleteDetail(userId: string) {
     explanations,
     focus,
     changes,
+    load,
   };
 }
 

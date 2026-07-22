@@ -53,6 +53,9 @@ export default async function PainelPage() {
   const atRisk = athletes.filter((a) => a.status === "sumido" || a.status === "atencao");
   const scored = athletes.filter((a) => a.identityScore !== null && !a.calibrating);
   const evolving = scored.filter((a) => (a.delta ?? 0) > 0);
+  const loadWatch = athletes.filter(
+    (a) => a.load.status === "subindo-rapido" || a.load.status === "caindo",
+  );
   const avgScore = scored.length
     ? Math.round(scored.reduce((s, a) => s + (a.identityScore ?? 0), 0) / scored.length)
     : null;
@@ -206,6 +209,40 @@ export default async function PainelPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          <div className="panel" style={{ marginTop: 14 }}>
+            <div className="ph">
+              <h2>Carga de treino · quem mudou o ritmo</h2>
+              {loadWatch.length ? <span className="cnt">{loadWatch.length}</span> : null}
+            </div>
+            {loadWatch.length === 0 ? (
+              <p className="uplmsg">
+                Ninguém com variação brusca de volume esta semana — cargas equilibradas. É um dado
+                para acompanhar, não um alerta de lesão.
+              </p>
+            ) : (
+              <>
+                {loadWatch.map((a) => (
+                  <div className="arow" key={a.userId}>
+                    <div className="av">{a.initials}</div>
+                    <div className="info">
+                      <div className="an">{a.name}</div>
+                      <div className="rz queda">
+                        <span className="dot" />
+                        {a.load.status === "subindo-rapido" ? "▲ " : "▼ "}
+                        {a.load.note}
+                      </div>
+                    </div>
+                    <Link className="act" href={`/alunos/${a.userId}`}>Ver</Link>
+                  </div>
+                ))}
+                <p className="uplmsg" style={{ marginTop: 10 }}>
+                  Comparação da semana com a média das últimas 4. É informação descritiva para sua
+                  leitura de treino — não prevê lesão.
+                </p>
+              </>
+            )}
           </div>
 
           <div className="panel roster" style={{ marginTop: 14 }}>

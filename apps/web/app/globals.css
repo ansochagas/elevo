@@ -374,6 +374,18 @@ td.r { text-align: right; }
 .wkchart .wklbl { font-size: 9px; fill: var(--t3); }
 .wkchart .wkval { font-size: 11px; font-weight: 700; fill: var(--ac); }
 
+/* linha de carga de treino (descritiva) */
+.loadline { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #c2cad2; margin-bottom: 14px; padding: 9px 12px; background: #0c0f13; border: 1px solid var(--bd); border-radius: 10px; }
+.loadline .lb { font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; color: var(--t3); }
+.loadline .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--t3); flex: 0 0 auto; }
+.loadline.subindo-rapido .dot, .loadline.caindo .dot { background: var(--att); }
+.loadline.subindo-rapido .lb, .loadline.caindo .lb { color: var(--att); }
+.loadline.subindo-rapido, .loadline.caindo { border-color: rgba(224,168,58,.3); }
+.loadline.parado .dot { background: var(--sum); }
+.loadline.parado .lb { color: var(--sum); }
+.loadline.parado { border-color: rgba(224,106,92,.3); }
+.loadline.estavel .dot { background: var(--evo); }
+
 /* upload de logo da assessoria */
 .logoup { display: flex; flex-direction: column; gap: 12px; }
 .logoprev { height: 92px; border: 1px dashed var(--bd); border-radius: 12px; background: #0c0f13; display: flex; align-items: center; justify-content: center; padding: 10px; }

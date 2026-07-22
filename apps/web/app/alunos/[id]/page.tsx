@@ -116,6 +116,13 @@ export default async function AlunoDetalhePage({
       {a.cleanCount > 0 ? (
         <div className="panel" style={{ marginBottom: 14 }}>
           <div className="ph"><h2>Números de {a.name.split(" ")[0]}</h2></div>
+          {a.load.status !== "sem-dados" ? (
+            <div className={`loadline ${a.load.status}`}>
+              <span className="dot" />
+              <span className="lb">Carga de treino</span>
+              {a.load.note}
+            </div>
+          ) : null}
           <NumbersBlock m={a.metrics} />
           {a.metrics.records.length > 0 ? (
             <div style={{ marginTop: 16 }}>

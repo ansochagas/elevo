@@ -219,6 +219,61 @@ export function explainAttributes(clean: readonly Activity[], now: Date): Record
   return out;
 }
 
+export type LoadStatus = "parado" | "subindo-rapido" | "caindo" | "estavel" | "sem-dados";
+
+export interface LoadTrend {
+  /** km nos últimos 7 dias (carga aguda) */
+  acuteKm: number;
+  /** média semanal de km nas últimas 4 semanas (carga crônica) */
+  chronicWeeklyKm: number;
+  /** aguda ÷ crônica (null sem base suficiente) */
+  ratio: number | null;
+  daysSinceLast: number | null;
+  status: LoadStatus;
+  /** texto DESCRITIVO (nunca prescrição nem previsão de lesão) */
+  note: string;
+}
+
+/**
+ * Tendência de carga de treino — sinal DESCRITIVO para o treinador (não prevê
+ * lesão; ACWR foi refutado como preditor). Compara a semana atual com a média
+ * das últimas 4 semanas. Só sinaliza quando há base (≥3 km/sem de média).
+ */
+export function loadTrend(clean: readonly { start: Date; distanceKm: number }[], now: Date): LoadTrend {
+  const base: LoadTrend = {
+    acuteKm: 0, chronicWeeklyKm: 0, ratio: null, daysSinceLast: null,
+    status: "sem-dados", note: "Sem corridas suficientes para ler a carga.",
+  };
+  if (clean.length === 0) return base;
+
+  const runs = [...clean].sort((a, b) => a.start.getTime() - b.start.getTime());
+  const last = runs[runs.length - 1]!;
+  const daysSinceLast = Math.floor(daysBetween(last.start, now));
+  const kmInLast = (days: number) =>
+    runs.filter((a) => daysBetween(a.start, now) <= days && a.start <= now).reduce((s, a) => s + a.distanceKm, 0);
+
+  const acuteKm = kmInLast(7);
+  const chronicWeeklyKm = kmInLast(28) / 4;
+  const ratio = chronicWeeklyKm > 0 ? acuteKm / chronicWeeklyKm : null;
+
+  // sem corrida há uma semana ou mais
+  if (daysSinceLast >= 7) {
+    return { acuteKm, chronicWeeklyKm, ratio, daysSinceLast, status: "parado", note: `Sem corridas há ${daysSinceLast} dias.` };
+  }
+  // base fraca (atleta novo/pouco volume) → não alarma
+  if (ratio === null || chronicWeeklyKm < 3) {
+    return { acuteKm, chronicWeeklyKm, ratio, daysSinceLast, status: "estavel", note: "Volume estável em relação às últimas semanas." };
+  }
+  const pct = Math.round((ratio - 1) * 100);
+  if (ratio >= 1.5) {
+    return { acuteKm, chronicWeeklyKm, ratio, daysSinceLast, status: "subindo-rapido", note: `Volume ${pct}% acima da média das últimas 4 semanas.` };
+  }
+  if (ratio <= 0.5) {
+    return { acuteKm, chronicWeeklyKm, ratio, daysSinceLast, status: "caindo", note: `Volume ${Math.abs(pct)}% abaixo da média das últimas semanas.` };
+  }
+  return { acuteKm, chronicWeeklyKm, ratio, daysSinceLast, status: "estavel", note: "Volume em linha com as últimas semanas." };
+}
+
 export interface WeekVolume {
   /** segunda-feira (UTC) que abre a semana, em ms */
   weekStartMs: number;

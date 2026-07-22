@@ -46,6 +46,7 @@ export {
   teamWeeklyVolume,
   runnerLevel,
   runnerArchetype,
+  loadTrend,
   type RunnerMetrics,
   type PersonalRecord,
   type MonthBucket,
@@ -53,6 +54,8 @@ export {
   type AttrChange,
   type WeekVolume,
   type RunnerLevel,
+  type LoadTrend,
+  type LoadStatus,
 } from "./metrics.ts";
 export { lerp, median, mean, percentile, clampScore, type Anchor } from "./math.ts";
 export { haversineM } from "./geo.ts";
