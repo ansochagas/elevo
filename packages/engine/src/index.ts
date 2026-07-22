@@ -40,9 +40,14 @@ export {
   computeMetrics,
   predictRaces,
   explainAttributes,
+  attributeTier,
+  focusArea,
+  attributeChanges,
   type RunnerMetrics,
   type PersonalRecord,
   type MonthBucket,
+  type FocusArea,
+  type AttrChange,
 } from "./metrics.ts";
 export { lerp, median, mean, percentile, clampScore, type Anchor } from "./math.ts";
 export { haversineM } from "./geo.ts";

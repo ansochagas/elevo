@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeMetrics, predictRaces, explainAttributes } from "../src/metrics.ts";
+import { computeMetrics, predictRaces, explainAttributes, attributeTier, focusArea, attributeChanges } from "../src/metrics.ts";
 import { run } from "./helpers.ts";
 
 const D = (s: string) => new Date(`${s}T12:00:00`);
@@ -55,6 +55,32 @@ describe("predictRaces (Riegel)", () => {
   });
   it("sem pace retorna vazio", () => {
     expect(predictRaces(null)).toEqual([]);
+  });
+});
+
+describe("tier / foco / mudanças", () => {
+  it("tier dá significado à nota", () => {
+    expect(attributeTier(35)).toBe("Iniciante");
+    expect(attributeTier(49)).toBe("Em desenvolvimento");
+    expect(attributeTier(60)).toBe("Bom");
+    expect(attributeTier(72)).toBe("Forte");
+    expect(attributeTier(90)).toBe("Avançado");
+  });
+  it("foco = atributo mais fraco (exceto evolução)", () => {
+    const f = focusArea({ ritmo: 49, resistencia: 60, regularidade: 35, finalizacao: 51, subida: 60, evolucao: 20 });
+    expect(f?.key).toBe("regularidade"); // 35 é o menor, evolução é ignorada
+    expect(f?.hint).toMatch(/onstância/);
+  });
+  it("mudanças separam melhora de piora e ordenam", () => {
+    const c = attributeChanges(
+      { ritmo: 50, resistencia: 62, regularidade: 30 },
+      { ritmo: 45, resistencia: 60, regularidade: 40 },
+    );
+    expect(c.improved.map((x) => x.key)).toEqual(["ritmo", "resistencia"]); // +5, +2
+    expect(c.declined[0]?.key).toBe("regularidade"); // -10
+  });
+  it("sem snapshot anterior, nada muda", () => {
+    expect(attributeChanges({ ritmo: 50 }, null).improved).toHaveLength(0);
   });
 });
 

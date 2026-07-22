@@ -2,10 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getAthleteDetail } from "@/lib/data";
-import { AreaChart } from "@/components/charts";
+import { EvolutionChart } from "@/components/charts";
 import { BottomNav } from "@/components/athlete/BottomNav";
 import { UploadButton } from "@/components/UploadButton";
-import { NumbersBlock, RecordsBlock, PredictionsBlock, ExplainedAttributes } from "@/components/Kpis";
+import { NumbersBlock, RecordsBlock, PredictionsBlock, ExplainedAttributes, FocusBlock } from "@/components/Kpis";
 
 export default async function AtletaPage() {
   const session = await auth();
@@ -106,6 +106,13 @@ export default async function AtletaPage() {
             </section>
           ) : null}
 
+          {attrs && !a.calibrating && (a.focus || a.changes.improved.length > 0 || a.changes.declined.length > 0) ? (
+            <section className="acard">
+              <h3>Seu foco agora</h3>
+              <FocusBlock focus={a.focus} changes={a.changes} />
+            </section>
+          ) : null}
+
           {a.predictions.length > 0 && !a.calibrating ? (
             <section className="acard">
               <h3>Se você fosse correr uma prova hoje</h3>
@@ -116,7 +123,7 @@ export default async function AtletaPage() {
           {a.timeline.length >= 2 && !a.calibrating ? (
             <section className="acard aevo">
               <h3>Evolução do score</h3>
-              <AreaChart points={a.timeline.map((t) => t.smoothed)} color="var(--ac)" label="Evolução do seu Runner Score" />
+              <EvolutionChart points={a.timeline} label="Evolução do seu Runner Score" />
             </section>
           ) : null}
 

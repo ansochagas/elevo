@@ -5,8 +5,8 @@ import { getAssessoriaOf, getAthleteDetail } from "@/lib/data";
 import { regenerateInvite, unlinkAthlete, updateAthlete } from "@/lib/actions";
 import { CoachShell } from "@/components/CoachShell";
 import { UploadButton } from "@/components/UploadButton";
-import { AreaChart } from "@/components/charts";
-import { NumbersBlock, RecordsBlock, ExplainedAttributes } from "@/components/Kpis";
+import { EvolutionChart } from "@/components/charts";
+import { NumbersBlock, RecordsBlock, ExplainedAttributes, FocusBlock } from "@/components/Kpis";
 
 const fmtDate = (d: Date) =>
   d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
@@ -133,17 +133,20 @@ export default async function AlunoDetalhePage({
             <ExplainedAttributes attrs={attrs} explanations={a.explanations} />
           </div>
           <div className="panel evo">
-            <div className="ph"><h2>Evolução</h2></div>
+            <div className="ph"><h2>Evolução do Runner Score</h2></div>
             {a.timeline.length >= 2 ? (
-              <AreaChart
-                points={a.timeline.map((t) => t.smoothed)}
-                color="var(--ac)"
-                label={`Evolução do Runner Score de ${a.name}`}
-              />
+              <EvolutionChart points={a.timeline} label={`Evolução do Runner Score de ${a.name}`} />
             ) : (
               <p className="uplmsg">Com mais alguns meses de corridas, a linha de evolução aparece aqui.</p>
             )}
           </div>
+        </div>
+      ) : null}
+
+      {attrs && !a.calibrating && (a.focus || a.changes.improved.length > 0 || a.changes.declined.length > 0) ? (
+        <div className="panel" style={{ marginBottom: 14 }}>
+          <div className="ph"><h2>Leitura de treino · onde mirar</h2></div>
+          <FocusBlock focus={a.focus} changes={a.changes} coachView firstName={a.name.split(" ")[0]} />
         </div>
       ) : null}
 

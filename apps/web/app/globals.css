@@ -299,11 +299,45 @@ td.r { text-align: right; }
 .pred .t { font-size: 16px; font-weight: 600; }
 
 /* barra de atributo com explicação embaixo */
-.abx { margin-bottom: 14px; }
+.scalenote { font-size: 11.5px; color: var(--t2); line-height: 1.5; margin: 0 0 16px; padding: 10px 12px; background: #0c0f12; border: 1px solid var(--bd); border-radius: 10px; }
+.scalenote strong { color: var(--t1); }
+.abx { margin-bottom: 16px; }
 .abx .row { display: grid; grid-template-columns: 100px 1fr 26px; align-items: center; gap: 11px; }
 .abx .row .l { font-size: 12.5px; color: #c2cad2; font-weight: 500; }
 .abx .row .t { height: 5px; border-radius: 5px; background: #1b1f24; position: relative; overflow: hidden; }
 .abx .row .f { position: absolute; inset: 0 auto 0 0; background: var(--ac); border-radius: 5px; }
 .abx .row .v { font-size: 12.5px; font-weight: 600; text-align: right; }
-.abx .why { font-size: 11.5px; color: var(--t2); line-height: 1.4; margin: 5px 0 0 0; padding-left: 111px; }
-@media (max-width: 520px) { .abx .why { padding-left: 0; } }
+.abx .abmeta { padding-left: 111px; margin-top: 6px; }
+.abx .abmeta .why { font-size: 11.5px; color: var(--t2); line-height: 1.4; margin: 4px 0 0 0; }
+.abx .tier { display: inline-block; font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
+@media (max-width: 520px) { .abx .abmeta { padding-left: 0; } }
+
+/* cores das faixas (dão significado ao número) */
+.f.t-ini { background: #6b7280; } .tier.t-ini { background: rgba(107,114,128,.16); color: #9aa4af; }
+.f.t-dev { background: #d98a3a; } .tier.t-dev { background: rgba(217,138,58,.15); color: #e0a83a; }
+.f.t-bom { background: #56c98a; } .tier.t-bom { background: rgba(86,201,138,.15); color: #56c98a; }
+.f.t-forte { background: #4bb8d8; } .tier.t-forte { background: rgba(75,184,216,.15); color: #6cc9e4; }
+.f.t-adv { background: #b98af0; } .tier.t-adv { background: rgba(185,138,240,.16); color: #c6a3f2; }
+
+/* bloco de foco / evolução dos atributos */
+.focus { }
+.fcompare { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+@media (max-width: 520px) { .fcompare { grid-template-columns: 1fr; } }
+.fcol .fh { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; margin-bottom: 8px; }
+.fcol .fh.up { color: var(--evo); } .fcol .fh.down { color: var(--sum); }
+.fcol ul { list-style: none; margin: 0; padding: 0; }
+.fcol li { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-top: 1px solid var(--dv); font-size: 12.5px; }
+.fcol li:first-child { border-top: none; }
+.fcol li .a { color: #cdd4db; }
+.fcol li .d { font-weight: 700; } .fcol li .d.up { color: var(--evo); } .fcol li .d.down { color: var(--sum); }
+.ftarget { background: var(--ac-deep); border: 1px solid rgba(116,210,172,.22); border-radius: 12px; padding: 14px 16px; }
+.ftarget .k { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--ac); font-weight: 700; }
+.ftarget .v { font-size: 17px; font-weight: 600; margin-top: 4px; }
+.ftarget .v .tag { font-size: 11px; font-weight: 600; color: var(--t2); margin-left: 6px; }
+.ftarget .hint { font-size: 12.5px; color: #cdd4db; line-height: 1.5; margin: 8px 0 0; }
+.ftarget .coachnote { font-size: 11.5px; color: var(--ac); line-height: 1.45; margin: 8px 0 0; font-weight: 500; }
+
+/* gráfico de evolução */
+.evochart .axlbl { font-size: 9px; fill: var(--t3); }
+.evochart .evoval { font-size: 12px; font-weight: 700; fill: var(--ac); }
+.evochart .evodelta { font-size: 9.5px; font-weight: 700; letter-spacing: .04em; }

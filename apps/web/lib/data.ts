@@ -4,7 +4,10 @@ import {
   computeMetrics,
   predictRaces,
   explainAttributes,
+  focusArea,
+  attributeChanges,
   type Activity,
+  type AttributeKey,
 } from "@elevo/engine";
 import { db } from "./db";
 import { activities, assessorias, athleteProfiles, scoreSnapshots, users } from "./db/schema";
@@ -189,6 +192,11 @@ export async function getAthleteDetail(userId: string) {
   const predictions = predictRaces(metrics.bestPaceMinKm);
   const explanations = explainAttributes(cleanActs, now);
 
+  const latestAttrs = (latest?.attributes as Partial<Record<AttributeKey, number | null>>) ?? {};
+  const prevAttrs = (prev?.attributes as Partial<Record<AttributeKey, number | null>>) ?? null;
+  const focus = focusArea(latestAttrs);
+  const changes = attributeChanges(latestAttrs, prevAttrs);
+
   return {
     userId,
     name: info.name,
@@ -213,6 +221,8 @@ export async function getAthleteDetail(userId: string) {
     metrics,
     predictions,
     explanations,
+    focus,
+    changes,
   };
 }
 

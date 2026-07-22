@@ -1,4 +1,4 @@
-import type { RunnerMetrics } from "@elevo/engine";
+import { attributeTier, type RunnerMetrics, type FocusArea, type AttrChange } from "@elevo/engine";
 import { ATTR_LABEL, type AthAttrKey } from "@/lib/athlete";
 
 const ATTR_ORDER: AthAttrKey[] = ["ritmo", "resistencia", "regularidade", "finalizacao", "subida", "evolucao"];
@@ -89,6 +89,15 @@ export function PredictionsBlock({
   );
 }
 
+/** Faixa (tier) → cor da barra, para o número ganhar significado visual. */
+const TIER_CLASS: Record<string, string> = {
+  Iniciante: "t-ini",
+  "Em desenvolvimento": "t-dev",
+  Bom: "t-bom",
+  Forte: "t-forte",
+  Avançado: "t-adv",
+};
+
 /** Atributos com a EXPLICAÇÃO do porquê de cada número (o diferencial). */
 export function ExplainedAttributes({
   attrs,
@@ -99,19 +108,106 @@ export function ExplainedAttributes({
 }) {
   return (
     <div>
+      <p className="scalenote">
+        Cada atributo é uma nota de <strong>0 a 100</strong>, calculada a partir das suas próprias corridas —
+        não é comparação com outras pessoas. As faixas: 0–39 Iniciante · 40–54 Em desenvolvimento ·
+        55–69 Bom · 70–82 Forte · 83–100 Avançado.
+      </p>
       {ATTR_ORDER.map((k) => {
         const v = attrs[k];
+        const tier = typeof v === "number" ? attributeTier(v) : null;
         return (
           <div className="abx" key={k}>
             <div className="row tnum">
               <span className="l">{ATTR_LABEL[k]}</span>
-              <span className="t"><span className="f" style={{ width: `${v ?? 0}%` }} /></span>
+              <span className="t"><span className={`f ${tier ? TIER_CLASS[tier] : ""}`} style={{ width: `${v ?? 0}%` }} /></span>
               <span className="v">{v ?? "—"}</span>
             </div>
-            {explanations[k] ? <p className="why">{explanations[k]}</p> : null}
+            <div className="abmeta">
+              {tier ? <span className={`tier ${TIER_CLASS[tier]}`}>{tier}</span> : null}
+              {explanations[k] ? <p className="why">{explanations[k]}</p> : null}
+            </div>
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * Bloco de FOCO — o que melhorou, o que caiu e onde mirar agora.
+ * Responsabilidade científica: sugere direção genérica e SEMPRE remete ao treinador,
+ * nunca prescreve ritmo/volume específico nem promete resultado.
+ */
+export function FocusBlock({
+  focus,
+  changes,
+  coachView = false,
+  firstName,
+}: {
+  focus: FocusArea | null;
+  changes: { improved: AttrChange[]; declined: AttrChange[] };
+  coachView?: boolean;
+  firstName?: string;
+}) {
+  const { improved, declined } = changes;
+  const hasCompare = improved.length > 0 || declined.length > 0;
+  const who = coachView ? (firstName ?? "O aluno") : "Você";
+  if (!focus && !hasCompare) return null;
+
+  return (
+    <div className="focus">
+      {hasCompare ? (
+        <div className="fcompare">
+          {improved.length > 0 ? (
+            <div className="fcol">
+              <div className="fh up">▲ Melhorou desde a última leitura</div>
+              <ul>
+                {improved.slice(0, 3).map((c) => (
+                  <li key={c.key}>
+                    <span className="a">{ATTR_LABEL[c.key as AthAttrKey]}</span>
+                    <span className="d up tnum">+{c.delta}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {declined.length > 0 ? (
+            <div className="fcol">
+              <div className="fh down">▼ Recuou desde a última leitura</div>
+              <ul>
+                {declined.slice(0, 3).map((c) => (
+                  <li key={c.key}>
+                    <span className="a">{ATTR_LABEL[c.key as AthAttrKey]}</span>
+                    <span className="d down tnum">{c.delta}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <p className="uplmsg" style={{ margin: "0 0 12px" }}>
+          Quando houver uma leitura anterior para comparar, o que melhorou e o que recuou aparece aqui.
+        </p>
+      )}
+
+      {focus ? (
+        <div className="ftarget">
+          <div className="k">Onde focar agora</div>
+          <div className="v">
+            {ATTR_LABEL[focus.key as AthAttrKey]} <span className="tag">{focus.score} · {focus.tier}</span>
+          </div>
+          <p className="hint">
+            É {coachView ? "o atributo mais baixo do aluno" : "seu atributo mais baixo"} hoje — o de maior espaço para crescer. {focus.hint}
+          </p>
+          <p className="coachnote">
+            {coachView
+              ? "Use como ponto de partida da conversa de treino — o número mostra onde, você define o como."
+              : "Converse com seu treinador sobre isso: ele traduz esse número no treino certo para você."}
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }

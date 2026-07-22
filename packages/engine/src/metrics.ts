@@ -1,4 +1,4 @@
-import type { Activity } from "./types.ts";
+import type { Activity, AttributeKey } from "./types.ts";
 import { paceMinKm } from "./clean.ts";
 import { median, percentile } from "./math.ts";
 import { bestSustainedPace } from "./attributes.ts";
@@ -217,4 +217,69 @@ export function explainAttributes(clean: readonly Activity[], now: Date): Record
     : "Sua evolução aparece quando você acumular alguns meses de corridas.";
 
   return out;
+}
+
+/** Faixa qualitativa de um atributo 0-100 (dá significado à nota). */
+export function attributeTier(score: number): string {
+  if (score >= 83) return "Avançado";
+  if (score >= 70) return "Forte";
+  if (score >= 55) return "Bom";
+  if (score >= 40) return "Em desenvolvimento";
+  return "Iniciante";
+}
+
+/** Direção SEGURA e genérica por atributo — nunca prescrição (ritmo/volume). */
+const FOCUS_HINT: Record<AttributeKey, string> = {
+  ritmo: "Seu ritmo é onde há mais espaço para ganhar velocidade.",
+  resistencia: "Aumentar aos poucos a distância dos treinos longos costuma elevar a resistência.",
+  regularidade: "Constância é o que mais destrava tudo — correr com mais frequência puxa os outros atributos junto.",
+  finalizacao: "Terminar as corridas mais forte do que começou é um hábito treinável.",
+  subida: "Incluir percursos com mais subida fortalece esse ponto.",
+  evolucao: "Manter a constância das últimas semanas sustenta sua evolução.",
+};
+
+export interface FocusArea {
+  key: AttributeKey;
+  score: number;
+  tier: string;
+  hint: string;
+}
+
+/** Atributo mais fraco (exceto Evolução, que é meta) = foco sugerido. */
+export function focusArea(attrs: Partial<Record<AttributeKey, number | null>>): FocusArea | null {
+  const keys: AttributeKey[] = ["ritmo", "resistencia", "regularidade", "finalizacao", "subida"];
+  const avail = keys.filter((k) => typeof attrs[k] === "number");
+  if (avail.length === 0) return null;
+  const key = avail.reduce((lo, k) => ((attrs[k] as number) < (attrs[lo] as number) ? k : lo));
+  const score = attrs[key] as number;
+  return { key, score, tier: attributeTier(score), hint: FOCUS_HINT[key] };
+}
+
+export interface AttrChange {
+  key: AttributeKey;
+  from: number;
+  to: number;
+  delta: number;
+}
+
+/** Compara dois conjuntos de atributos (snapshot atual vs. anterior). */
+export function attributeChanges(
+  latest: Partial<Record<AttributeKey, number | null>>,
+  prev: Partial<Record<AttributeKey, number | null>> | null,
+): { improved: AttrChange[]; declined: AttrChange[] } {
+  const improved: AttrChange[] = [];
+  const declined: AttrChange[] = [];
+  if (!prev) return { improved, declined };
+  const keys: AttributeKey[] = ["ritmo", "resistencia", "regularidade", "finalizacao", "subida", "evolucao"];
+  for (const k of keys) {
+    const to = latest[k];
+    const from = prev[k];
+    if (typeof to !== "number" || typeof from !== "number") continue;
+    const delta = to - from;
+    if (delta > 0) improved.push({ key: k, from, to, delta });
+    else if (delta < 0) declined.push({ key: k, from, to, delta });
+  }
+  improved.sort((a, b) => b.delta - a.delta);
+  declined.sort((a, b) => a.delta - b.delta);
+  return { improved, declined };
 }
