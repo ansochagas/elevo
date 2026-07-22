@@ -1,26 +1,38 @@
 import Link from "next/link";
-import { athlete, ATTR_LABEL, type AthAttrKey } from "@/lib/athlete";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import { getAthleteDetail } from "@/lib/data";
 import { AreaChart } from "@/components/charts";
 import { BottomNav } from "@/components/athlete/BottomNav";
+import { UploadButton } from "@/components/UploadButton";
+import { ATTR_LABEL, type AthAttrKey } from "@/lib/athlete";
 
 const ATTR_ORDER: AthAttrKey[] = ["ritmo", "resistencia", "regularidade", "finalizacao", "subida", "evolucao"];
 
-export default function AtletaPage() {
-  const a = athlete;
+export default async function AtletaPage() {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+  const a = await getAthleteDetail(session.user.id);
+  if (!a) redirect("/login");
+
+  const attrs = (a.latest?.attributes ?? null) as Record<string, number | null> | null;
+  const lastRun = a.activities.find((r) => !r.flaggedReason) ?? null;
+  const lastPace = lastRun
+    ? (() => {
+        const p = lastRun.movingSec / 60 / lastRun.distanceKm;
+        const m = Math.floor(p);
+        const s = Math.round((p - m) * 60);
+        return `${m}:${String(s === 60 ? 0 : s).padStart(2, "0")}/km`;
+      })()
+    : null;
+
   return (
     <main className="ashell">
       <h1 className="sr-only">Perfil do corredor {a.name}</h1>
 
       <header className="atop">
-        <div className="brand">
-          <span className="g">E</span>Elevo
-        </div>
-        <span className="set" aria-label="Configurações">
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="3" />
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-          </svg>
-        </span>
+        <div className="brand"><span className="g">E</span>Elevo</div>
+        <a className="sairlink" href="/sair">Sair</a>
       </header>
 
       <section className="ahero">
@@ -28,65 +40,110 @@ export default function AtletaPage() {
           <div className="mono">{a.initials}</div>
           <div>
             <div className="nm">{a.name}</div>
-            <div className="loc">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M12 21s-7-5.2-7-11a7 7 0 0 1 14 0c0 5.8-7 11-7 11z" /><circle cx="12" cy="10" r="2.5" />
-              </svg>
-              {a.city}
+            {a.city ? <div className="loc">{a.city}</div> : null}
+          </div>
+          {a.level ? <div className="lvl">{a.level}{a.archetype ? ` · ${a.archetype}` : ""}</div> : null}
+        </div>
+
+        {a.latest && !a.calibrating ? (
+          <div className="scores tnum">
+            <div className="sc">
+              <div className="lab">Runner Score</div>
+              <div className="v">{a.latest.identityScore}</div>
             </div>
+            {a.latest.formScore !== null ? (
+              <div className="sc form">
+                <div className="lab">Forma atual</div>
+                <div className="v">
+                  {a.latest.formScore}{" "}
+                  {a.latest.formScore > a.latest.identityScore ? <span className="up">↑</span> : null}
+                </div>
+              </div>
+            ) : null}
           </div>
-          <div className="lvl">{a.level} · {a.archetype}</div>
-        </div>
-        <div className="scores tnum">
-          <div className="sc">
-            <div className="lab">Runner Score</div>
-            <div className="v">{a.identityScore}</div>
-          </div>
-          <div className="sc form">
-            <div className="lab">Forma atual</div>
-            <div className="v">{a.formScore} <span className="up">↑</span></div>
-          </div>
-        </div>
+        ) : null}
       </section>
 
-      <section className="acard">
-        <h3>Atributos</h3>
-        <div className="abars tnum">
-          {ATTR_ORDER.map((k) => (
-            <div className="ab" key={k}>
-              <span className="l">{ATTR_LABEL[k]}</span>
-              <span className="t"><span className="f" style={{ width: `${a.attributes[k]}%` }} /></span>
-              <span className="val">{a.attributes[k]}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="acard aevo">
-        <h3>Evolução</h3>
-        <div className="big tnum">
-          <span className="n">+48</span>
-          <span className="lb">no último trimestre · em ascensão</span>
-        </div>
-        <AreaChart points={a.evolution} color="var(--ac)" label="Evolução do seu Runner Score" />
-      </section>
-
-      <section className="acard">
-        <div className="avar">
-          <span className="ic">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 21V4" /><path d="M5 4h12l-2.5 4L17 12H5" /></svg>
-          </span>
-          <div>
-            <div className="t">Última corrida · {a.lastRun.distanceKm.toFixed(1).replace(".", ",")} km</div>
-            <div className="p">{a.lastRun.analysis}</div>
+      {a.cleanCount === 0 ? (
+        <section className="acard">
+          <div className="emptybox" style={{ padding: "26px 8px" }}>
+            <div className="big">Sua identidade nasce da primeira corrida</div>
+            <p>Envie o export do Strava (o ZIP inteiro, sem descompactar) ou arquivos .gpx/.fit do seu relógio. A gente cuida do resto.</p>
+            <UploadButton label="Enviar minhas corridas" />
           </div>
-        </div>
-      </section>
+        </section>
+      ) : (
+        <>
+          {a.calibrating ? (
+            <section className="acard">
+              <h3>Calibrando seu score</h3>
+              <p className="uplmsg" style={{ marginTop: 0 }}>
+                {a.cleanCount} corridas recebidas — faltam {Math.max(0, 8 - a.cleanCount)} para o seu Runner Score
+                ficar confiável. Continue enviando!
+              </p>
+              <div style={{ marginTop: 12 }}>
+                <UploadButton label="Enviar mais corridas" />
+              </div>
+            </section>
+          ) : null}
 
-      <Link href="/atleta/pos-corrida" className="ashare">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" /><path d="M12 15V3" /><path d="M8 7l4-4 4 4" /></svg>
-        Compartilhar minha carta
-      </Link>
+          {attrs && !a.calibrating ? (
+            <section className="acard">
+              <h3>Atributos</h3>
+              <div className="abars tnum">
+                {ATTR_ORDER.map((k) => {
+                  const v = attrs[k];
+                  return (
+                    <div className="ab" key={k}>
+                      <span className="l">{ATTR_LABEL[k]}</span>
+                      <span className="t"><span className="f" style={{ width: `${v ?? 0}%` }} /></span>
+                      <span className="val">{v ?? "—"}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
+
+          {a.timeline.length >= 2 && !a.calibrating ? (
+            <section className="acard aevo">
+              <h3>Evolução</h3>
+              <AreaChart points={a.timeline.map((t) => t.smoothed)} color="var(--ac)" label="Evolução do seu Runner Score" />
+            </section>
+          ) : null}
+
+          {lastRun ? (
+            <section className="acard">
+              <div className="avar">
+                <span className="ic">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 21V4" /><path d="M5 4h12l-2.5 4L17 12H5" /></svg>
+                </span>
+                <div>
+                  <div className="t">Última corrida · {lastRun.distanceKm.toFixed(1).replace(".", ",")} km · {lastPace}</div>
+                  <div className="p">
+                    {lastRun.finishSplit !== null && lastRun.finishSplit > 0.02
+                      ? "Você terminou mais rápido do que começou — finalização forte."
+                      : lastRun.finishSplit !== null && lastRun.finishSplit < -0.05
+                        ? "Você desacelerou no fim — tente guardar energia para fechar forte."
+                        : "Ritmo consistente do começo ao fim."}
+                  </div>
+                </div>
+              </div>
+            </section>
+          ) : null}
+
+          {!a.calibrating ? (
+            <section className="acard">
+              <h3>Enviar corridas</h3>
+              <UploadButton label="Enviar novas corridas" />
+            </section>
+          ) : null}
+
+          <Link href="/atleta/carta" className="ashare">
+            Ver minha carta
+          </Link>
+        </>
+      )}
 
       <BottomNav active="perfil" />
     </main>

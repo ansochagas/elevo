@@ -8,9 +8,9 @@ export default auth((req) => {
   const { pathname } = req.nextUrl;
   const session = req.auth;
 
-  // Não logado: só a tela de login é pública.
+  // Não logado: login e convite são públicos.
   if (!session?.user) {
-    if (pathname === "/login") return;
+    if (pathname === "/login" || pathname.startsWith("/convite")) return;
     return NextResponse.redirect(new URL("/login", req.nextUrl));
   }
 
@@ -27,6 +27,6 @@ export default auth((req) => {
 
 export const config = {
   matcher: [
-    "/((?!api/auth|_next/static|_next/image|favicon.ico|manifest.webmanifest|icon-192.png|icon-512.png|apple-touch-icon.png).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|manifest.webmanifest|icon-192.png|icon-512.png|apple-touch-icon.png).*)",
   ],
 };

@@ -11,6 +11,8 @@ export const users = pgTable(
     email: text("email").notNull(),
     passwordHash: text("password_hash").notNull(),
     role: text("role").$type<UserRole>().notNull(),
+    /** WhatsApp com DDI/DDD, só dígitos (ex.: 5585999999999) — usado no "Falar" */
+    phone: text("phone"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("users_email_idx").on(t.email)],
@@ -34,25 +36,35 @@ export const athleteProfiles = pgTable("athlete_profiles", {
   city: text("city"),
   level: text("level"),
   archetype: text("archetype"),
+  /** token do convite; null depois de ativado */
+  inviteToken: text("invite_token"),
+  /** quando o atleta aceitou que o treinador veja seus dados (LGPD) */
+  consentAt: timestamp("consent_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 /** Atividades normalizadas (saída do parser do @elevo/engine). */
-export const activities = pgTable("activities", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id),
-  start: timestamp("start", { withTimezone: true }).notNull(),
-  distanceKm: real("distance_km").notNull(),
-  movingSec: integer("moving_sec").notNull(),
-  elapsedSec: integer("elapsed_sec").notNull(),
-  elevGainM: real("elev_gain_m").notNull().default(0),
-  source: text("source").notNull().default("gpx"),
-  /** motivo da faxina quando descartada; null = atividade limpa */
-  flaggedReason: text("flagged_reason"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const activities = pgTable(
+  "activities",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    start: timestamp("start", { withTimezone: true }).notNull(),
+    distanceKm: real("distance_km").notNull(),
+    movingSec: integer("moving_sec").notNull(),
+    elapsedSec: integer("elapsed_sec").notNull(),
+    elevGainM: real("elev_gain_m").notNull().default(0),
+    source: text("source").notNull().default("gpx"),
+    /** negative split pré-calculado no ingest (a série não é persistida) */
+    finishSplit: real("finish_split"),
+    /** motivo da faxina quando descartada; null = atividade limpa */
+    flaggedReason: text("flagged_reason"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("activities_user_start_idx").on(t.userId, t.start)],
+);
 
 /** Snapshot do Runner Score calculado pelo motor (identidade + forma). */
 export const scoreSnapshots = pgTable("score_snapshots", {

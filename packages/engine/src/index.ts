@@ -17,6 +17,7 @@ export type {
 } from "./types.ts";
 
 export { parseGpx } from "./parse/gpx.ts";
+export { parseFit } from "./parse/fit.ts";
 export { cleanActivities, paceMinKm, CLEAN_THRESHOLDS } from "./clean.ts";
 export {
   computeAttributes,

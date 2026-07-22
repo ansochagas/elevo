@@ -39,6 +39,8 @@ export function bestSustainedPace(clean: readonly Activity[]): number | null {
  * Positivo = terminou mais rápido (negative split). Requer série interna.
  */
 export function finishSplit(a: Activity): number | null {
+  // pré-calculado (recomputo a partir do banco, sem série)
+  if (a.finishSplit !== undefined) return a.finishSplit;
   const s = a.series;
   if (!s || s.length < 2) return null;
   const last = s[s.length - 1]!;

@@ -23,6 +23,12 @@ export interface Activity {
   source: ActivitySource;
   /** série cumulativa distância×tempo; opcional (necessária para Finalização) */
   series?: TrackSample[];
+  /**
+   * Finalização pré-calculada (negative split). Quando presente, dispensa a
+   * série — usado ao recalcular a partir do banco, onde a série não é
+   * persistida (calcula-se no ingest e guarda-se só o escalar).
+   */
+  finishSplit?: number | null;
 }
 
 export type AttributeKey =
