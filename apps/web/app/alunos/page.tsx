@@ -33,7 +33,7 @@ export default async function AlunosPage({
   const { desvinculado } = await searchParams;
 
   return (
-    <CoachShell assessoriaName={assessoria.name} coachName={session.user.name ?? ""} active="alunos">
+    <CoachShell assessoriaName={assessoria.name} coachName={session.user.name ?? ""} logoUrl={assessoria.logoUrl} active="alunos">
       {desvinculado ? <div className="notice ok">Aluno desvinculado. A conta e o histórico continuam sendo dele.</div> : null}
       <div className="panel roster">
         <div className="ph">

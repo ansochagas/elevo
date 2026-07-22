@@ -5,18 +5,24 @@ export function CoachShell({
   assessoriaName,
   coachName,
   active,
+  logoUrl = null,
   children,
 }: {
   assessoriaName: string;
   coachName: string;
   active: "painel" | "alunos" | "config";
+  logoUrl?: string | null;
   children: ReactNode;
 }) {
   return (
     <main className="app">
       <div className="frame">
         <header className="top">
-          <div className="g">{assessoriaName[0]?.toUpperCase() ?? "E"}</div>
+          {logoUrl ? (
+            <img className="glogo" src={logoUrl} alt={assessoriaName} />
+          ) : (
+            <div className="g">{assessoriaName[0]?.toUpperCase() ?? "E"}</div>
+          )}
           <div>
             <div className="nm">{assessoriaName}</div>
             <div className="sub">Painel do treinador</div>

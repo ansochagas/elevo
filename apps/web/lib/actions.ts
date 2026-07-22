@@ -156,6 +156,26 @@ export async function updateAssessoria(formData: FormData) {
   redirect("/config?ok=assessoria");
 }
 
+/** Configurações: logomarca da assessoria (data URI ou remoção). Só o dono. */
+export async function updateAssessoriaLogo(formData: FormData) {
+  const { assessoria } = await requireCoach();
+  const remove = formData.get("remove") === "1";
+  const logo = String(formData.get("logo") ?? "");
+  // aceita só imagens embutidas (data URI) — nada de URL externa arbitrária
+  const value = remove ? null : logo.startsWith("data:image/") ? logo : null;
+  if (!remove && value === null) redirect("/config?erro=logo");
+  try {
+    await db.update(assessorias).set({ logoUrl: value }).where(eq(assessorias.id, assessoria.id));
+  } catch {
+    // coluna ainda não migrada em produção
+    redirect("/config?erro=logo-migracao");
+  }
+  revalidatePath("/");
+  revalidatePath("/config");
+  revalidatePath("/alunos");
+  redirect(`/config?ok=${remove ? "logo-removida" : "logo"}`);
+}
+
 /** Configurações: nome e e-mail da própria conta (qualquer papel logado). */
 export async function updateAccount(formData: FormData) {
   const session = await auth();

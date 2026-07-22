@@ -58,7 +58,7 @@ export default async function PainelPage() {
     : null;
 
   return (
-    <CoachShell assessoriaName={assessoria.name} coachName={session.user.name ?? ""} active="painel">
+    <CoachShell assessoriaName={assessoria.name} coachName={session.user.name ?? ""} logoUrl={assessoria.logoUrl} active="painel">
       {athletes.length === 0 ? (
         <div className="panel">
           <div className="emptybox">

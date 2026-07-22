@@ -16,7 +16,7 @@ export default async function NovoAlunoPage({
   const { erro } = await searchParams;
 
   return (
-    <CoachShell assessoriaName={assessoria.name} coachName={session.user.name ?? ""} active="alunos">
+    <CoachShell assessoriaName={assessoria.name} coachName={session.user.name ?? ""} logoUrl={assessoria.logoUrl} active="alunos">
       <div className="panel" style={{ maxWidth: 480 }}>
         <div className="ph"><h2>Adicionar aluno</h2></div>
         {erro === "nome" ? <div className="notice warn">Informe o nome do aluno.</div> : null}

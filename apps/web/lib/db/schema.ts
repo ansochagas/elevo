@@ -24,6 +24,8 @@ export const assessorias = pgTable("assessorias", {
   ownerId: uuid("owner_id")
     .notNull()
     .references(() => users.id),
+  /** logomarca da assessoria (data URI ou URL) — exibida no painel do treinador */
+  logoUrl: text("logo_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

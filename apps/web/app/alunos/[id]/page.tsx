@@ -42,7 +42,7 @@ export default async function AlunoDetalhePage({
     : null;
 
   return (
-    <CoachShell assessoriaName={assessoria.name} coachName={session.user.name ?? ""} active="alunos">
+    <CoachShell assessoriaName={assessoria.name} coachName={session.user.name ?? ""} logoUrl={assessoria.logoUrl} active="alunos">
       {flags.novo ? <div className="notice ok">Aluno criado! Mande o link de convite abaixo para ele ativar a conta.</div> : null}
       {flags.ok ? <div className="notice ok">Dados atualizados.</div> : null}
       {flags.convite ? <div className="notice ok">Novo convite gerado — o link antigo deixou de valer.</div> : null}

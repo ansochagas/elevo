@@ -3,16 +3,21 @@ import { auth } from "@/auth";
 import { getAssessoriaOf } from "@/lib/data";
 import { changePassword, updateAccount, updateAssessoria } from "@/lib/actions";
 import { CoachShell } from "@/components/CoachShell";
+import { LogoUploader } from "@/components/LogoUploader";
 
 const OK: Record<string, string> = {
   assessoria: "Nome da assessoria atualizado.",
   conta: "Dados da conta atualizados.",
   senha: "Senha alterada com sucesso.",
+  logo: "Logo atualizada.",
+  "logo-removida": "Logo removida.",
 };
 const ERRO: Record<string, string> = {
   email: "Este e-mail já está em uso.",
   "senha-curta": "A nova senha precisa ter pelo menos 8 caracteres.",
   "senha-atual": "A senha atual não confere.",
+  logo: "Não consegui salvar a logo. Envie uma imagem válida.",
+  "logo-migracao": "A logo ainda não está disponível — avise o suporte para concluir a configuração.",
 };
 
 export default async function ConfigPage({
@@ -28,7 +33,7 @@ export default async function ConfigPage({
   const { ok, erro } = await searchParams;
 
   return (
-    <CoachShell assessoriaName={assessoria.name} coachName={session.user.name ?? ""} active="config">
+    <CoachShell assessoriaName={assessoria.name} coachName={session.user.name ?? ""} logoUrl={assessoria.logoUrl} active="config">
       {ok && OK[ok] ? <div className="notice ok">{OK[ok]}</div> : null}
       {erro && ERRO[erro] ? <div className="notice warn">{ERRO[erro]}</div> : null}
 
@@ -44,6 +49,11 @@ export default async function ConfigPage({
               <button className="btnp" type="submit">Salvar</button>
             </form>
             <p className="uplmsg">Este nome aparece no painel, nos convites e nas cartas dos seus alunos.</p>
+          </div>
+
+          <div className="panel">
+            <div className="ph"><h2>Logo da assessoria</h2></div>
+            <LogoUploader current={assessoria.logoUrl} assessoriaName={assessoria.name} />
           </div>
 
           <div className="panel">

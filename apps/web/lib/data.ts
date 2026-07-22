@@ -64,12 +64,32 @@ function statusOf(a: {
 
 /** Assessoria do treinador logado (ou null). */
 export async function getAssessoriaOf(coachUserId: string) {
+  // colunas estáveis primeiro (não quebra se a migração da logo ainda não rodou)
   const rows = await db
-    .select()
+    .select({
+      id: assessorias.id,
+      name: assessorias.name,
+      ownerId: assessorias.ownerId,
+      createdAt: assessorias.createdAt,
+    })
     .from(assessorias)
     .where(eq(assessorias.ownerId, coachUserId))
     .limit(1);
-  return rows[0] ?? null;
+  const a = rows[0];
+  if (!a) return null;
+  // logo é opcional e tolera a coluna ainda não existir em produção
+  let logoUrl: string | null = null;
+  try {
+    const l = await db
+      .select({ logoUrl: assessorias.logoUrl })
+      .from(assessorias)
+      .where(eq(assessorias.id, a.id))
+      .limit(1);
+    logoUrl = l[0]?.logoUrl ?? null;
+  } catch {
+    logoUrl = null;
+  }
+  return { ...a, logoUrl };
 }
 
 /** Todos os atletas da assessoria, com snapshot mais recente e última corrida. */
