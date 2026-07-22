@@ -1,0 +1,23 @@
+# segredos e credenciais — NUNCA versionar
+.env
+.env.*
+!.env.example
+
+# dependências
+node_modules/
+dist/
+build/
+.next/
+next-env.d.ts
+*.tsbuildinfo
+
+# dados pessoais (export do Strava do fundador) — NÃO versionar
+/data/export/
+/data/**/*.zip
+/data/**/*.gpx
+/data/**/*.fit
+
+# logs e temporários
+*.log
+.DS_Store
+Thumbs.db

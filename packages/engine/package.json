@@ -1,0 +1,19 @@
+{
+  "name": "@elevo/engine",
+  "version": "0.1.0",
+  "description": "Motor analítico da Elevo — parsing, faxina, atributos e Runner Score. Independente da interface.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8",
+    "@types/node": "^22.10.2"
+  }
+}

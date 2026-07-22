@@ -1,0 +1,39 @@
+/**
+ * @elevo/engine — motor analítico da Elevo.
+ * Pipeline: parse (GPX/…) → normaliza → faxina → atributos → Runner Score.
+ * Funções puras e determinísticas. Independente da interface.
+ */
+
+export type {
+  Activity,
+  ActivitySource,
+  TrackSample,
+  AttributeKey,
+  Attributes,
+  ScoreResult,
+  RunnerProfile,
+  FlaggedActivity,
+  CleanResult,
+} from "./types.ts";
+
+export { parseGpx } from "./parse/gpx.ts";
+export { cleanActivities, paceMinKm, CLEAN_THRESHOLDS } from "./clean.ts";
+export {
+  computeAttributes,
+  bestSustainedPace,
+  finishSplit,
+  ANCHORS,
+  type AttributeResult,
+} from "./attributes.ts";
+export {
+  buildScore,
+  buildProfile,
+  computeGeral,
+  identityTimeline,
+  WEIGHTS,
+  SCORE_VERSION,
+  CALIBRATION_MIN_ACTIVITIES,
+  type TimelinePoint,
+} from "./score.ts";
+export { lerp, median, mean, percentile, clampScore, type Anchor } from "./math.ts";
+export { haversineM } from "./geo.ts";
