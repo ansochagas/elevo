@@ -44,12 +44,15 @@ export {
   focusArea,
   attributeChanges,
   teamWeeklyVolume,
+  runnerLevel,
+  runnerArchetype,
   type RunnerMetrics,
   type PersonalRecord,
   type MonthBucket,
   type FocusArea,
   type AttrChange,
   type WeekVolume,
+  type RunnerLevel,
 } from "./metrics.ts";
 export { lerp, median, mean, percentile, clampScore, type Anchor } from "./math.ts";
 export { haversineM } from "./geo.ts";

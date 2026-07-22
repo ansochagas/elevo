@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeMetrics, predictRaces, explainAttributes, attributeTier, focusArea, attributeChanges, teamWeeklyVolume } from "../src/metrics.ts";
+import { computeMetrics, predictRaces, explainAttributes, attributeTier, focusArea, attributeChanges, teamWeeklyVolume, runnerLevel, runnerArchetype } from "../src/metrics.ts";
 import { run } from "./helpers.ts";
 
 const D = (s: string) => new Date(`${s}T12:00:00`);
@@ -111,6 +111,39 @@ describe("teamWeeklyVolume", () => {
     const w = teamWeeklyVolume([], NOW, 6);
     expect(w).toHaveLength(6);
     expect(w.every((b) => b.km === 0 && b.runners === 0)).toBe(true);
+  });
+});
+
+describe("runnerLevel", () => {
+  it("mapeia score em faixa + divisão, monotônico", () => {
+    expect(runnerLevel(0).tier).toBe("Bronze");
+    expect(runnerLevel(520).label).toBe("Ouro II"); // geral 52 → Ouro II
+    expect(runnerLevel(990).tier).toBe("Diamante");
+    // divisões sobem dentro da faixa
+    expect(runnerLevel(400).label).toBe("Ouro I"); // geral 40, entrada de Ouro
+    expect(runnerLevel(590).label).toBe("Ouro III"); // topo de Ouro
+  });
+  it("nunca estoura os limites", () => {
+    expect(runnerLevel(-50).label).toBe("Bronze I");
+    expect(runnerLevel(9999).tier).toBe("Diamante");
+    expect([1, 2, 3]).toContain(runnerLevel(9999).division);
+  });
+});
+
+describe("runnerArchetype", () => {
+  it("escolhe o atributo dominante", () => {
+    expect(runnerArchetype({ ritmo: 80, resistencia: 40, regularidade: 42, finalizacao: 41, subida: 43 })).toBe("Velocista");
+    expect(runnerArchetype({ ritmo: 40, resistencia: 41, regularidade: 42, finalizacao: 41, subida: 80 })).toBe("Escalador");
+  });
+  it("perfil equilibrado vira Completo", () => {
+    expect(runnerArchetype({ ritmo: 50, resistencia: 52, regularidade: 49, finalizacao: 51, subida: 50 })).toBe("Completo");
+  });
+  it("dado real do fundador (empate res/sub) → Fundista", () => {
+    // ordem estável: resistencia vem antes de subida no empate 60/60
+    expect(runnerArchetype({ ritmo: 49, resistencia: 60, regularidade: 35, finalizacao: 51, subida: 60, evolucao: 61 })).toBe("Fundista");
+  });
+  it("dados de menos → null", () => {
+    expect(runnerArchetype({ ritmo: 50, resistencia: 52 })).toBeNull();
   });
 });
 

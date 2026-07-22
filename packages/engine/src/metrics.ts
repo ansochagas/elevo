@@ -256,6 +256,56 @@ export function teamWeeklyVolume(
     .map(([weekStartMs, b]) => ({ weekStartMs, km: b.km, runs: b.runs, runners: b.users.size }));
 }
 
+const LEVEL_TIERS = ["Bronze", "Prata", "Ouro", "Platina", "Diamante"] as const;
+const DIVISION_ROMAN = ["I", "II", "III"] as const;
+
+export interface RunnerLevel {
+  tier: string;
+  division: number; // 1-3 (I..III dentro da faixa)
+  label: string; // ex.: "Ouro II"
+}
+
+/**
+ * Nível/patente derivado do Runner Score de identidade (0-990 = geral×10).
+ * 5 faixas × 3 divisões, escada motivacional — calibrável quando houver base
+ * de vários corredores. Determinístico.
+ */
+export function runnerLevel(identityScore: number): RunnerLevel {
+  const g = Math.max(0, Math.min(99.999, identityScore / 10)); // 0-99 (=geral)
+  const span = 100 / LEVEL_TIERS.length; // 20 por faixa
+  const ti = Math.min(LEVEL_TIERS.length - 1, Math.floor(g / span));
+  const within = g - ti * span; // 0..20
+  const division = Math.min(3, Math.floor((within / span) * 3) + 1); // 1..3
+  const tier = LEVEL_TIERS[ti]!;
+  return { tier, division, label: `${tier} ${DIVISION_ROMAN[division - 1]}` };
+}
+
+/** Nome de arquétipo por atributo dominante (evolução é meta, não conta). */
+const ARCHETYPE_NAME: Record<Exclude<AttributeKey, "evolucao">, string> = {
+  ritmo: "Velocista",
+  resistencia: "Fundista",
+  regularidade: "Constante",
+  finalizacao: "Finalizador",
+  subida: "Escalador",
+};
+
+/**
+ * Arquétipo = o atributo em que o corredor mais se destaca no PRÓPRIO perfil.
+ * Se nenhum se sobressai (perfil equilibrado), "Completo". Null se dados de
+ * menos. Empate resolvido pela ordem estável das chaves.
+ */
+export function runnerArchetype(attrs: Partial<Record<AttributeKey, number | null>>): string | null {
+  const keys: Exclude<AttributeKey, "evolucao">[] = ["ritmo", "resistencia", "regularidade", "finalizacao", "subida"];
+  const avail = keys.filter((k) => typeof attrs[k] === "number");
+  if (avail.length < 3) return null;
+  const vals = avail.map((k) => attrs[k] as number);
+  const mean = vals.reduce((s, x) => s + x, 0) / vals.length;
+  const topKey = avail.reduce((hi, k) => ((attrs[k] as number) > (attrs[hi] as number) ? k : hi));
+  const top = attrs[topKey] as number;
+  if (top - mean < 8) return "Completo";
+  return ARCHETYPE_NAME[topKey];
+}
+
 /** Faixa qualitativa de um atributo 0-100 (dá significado à nota). */
 export function attributeTier(score: number): string {
   if (score >= 83) return "Avançado";

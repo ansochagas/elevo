@@ -7,6 +7,8 @@ import {
   focusArea,
   attributeChanges,
   teamWeeklyVolume,
+  runnerLevel,
+  runnerArchetype,
   type Activity,
   type AttributeKey,
   type WeekVolume,
@@ -112,13 +114,14 @@ export async function getAthletesOf(assessoriaId: string): Promise<RealAthlete[]
     const prev = mySnaps.find((s) => s.identityScore !== latest?.identityScore) ?? null;
     const myClean = acts.filter((a) => a.userId === p.userId && !a.flaggedReason);
     const lastRun = myClean[0] ?? null;
+    const scored = latest !== null && myClean.length >= 8;
     const base = {
       userId: p.userId,
       name: p.name,
       initials: initialsOf(p.name),
       phone: p.phone,
-      level: p.level,
-      archetype: p.archetype,
+      level: p.level ?? (scored ? runnerLevel(latest!.identityScore).label : null),
+      archetype: p.archetype ?? (scored ? runnerArchetype((latest!.attributes as Record<string, number | null>) ?? {}) : null),
       invitePending: p.inviteToken !== null,
       inviteToken: p.inviteToken,
       consentAt: p.consentAt,
@@ -234,15 +237,16 @@ export async function getPublicProfile(userId: string): Promise<PublicProfile | 
   const latest = snap[0];
   if (!latest) return null; // sem snapshot = ainda calibrando, não expõe
 
+  const attrs = (latest.attributes as Record<string, number | null>) ?? {};
   return {
     firstName: info.name.split(/\s+/)[0] ?? info.name,
     initials: initialsOf(info.name),
     brand: info.brand ?? "Elevo",
-    level: info.level,
-    archetype: info.archetype,
+    level: info.level ?? runnerLevel(latest.identityScore).label,
+    archetype: info.archetype ?? runnerArchetype(attrs),
     city: info.city,
     score: latest.identityScore,
-    attrs: (latest.attributes as Record<string, number | null>) ?? {},
+    attrs,
   };
 }
 
@@ -309,6 +313,10 @@ export async function getAthleteDetail(userId: string) {
   const focus = focusArea(latestAttrs);
   const changes = attributeChanges(latestAttrs, prevAttrs);
 
+  // nível e arquétipo derivados do score (colunas do DB são fallback/override manual)
+  const derivedLevel = latest ? runnerLevel(latest.identityScore).label : null;
+  const derivedArchetype = latest ? runnerArchetype(latestAttrs) : null;
+
   return {
     userId,
     name: info.name,
@@ -316,8 +324,8 @@ export async function getAthleteDetail(userId: string) {
     initials: initialsOf(info.name),
     phone: info.phone,
     city: info.city,
-    level: info.level,
-    archetype: info.archetype,
+    level: info.level ?? derivedLevel,
+    archetype: info.archetype ?? derivedArchetype,
     assessoriaId: info.assessoriaId,
     assessoriaName: info.assessoriaName,
     invitePending: info.inviteToken !== null,
