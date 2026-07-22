@@ -189,6 +189,63 @@ export async function getTeamVolume(assessoriaId: string, weeks = 8): Promise<Te
   };
 }
 
+export interface PublicProfile {
+  firstName: string;
+  initials: string;
+  brand: string;
+  level: string | null;
+  archetype: string | null;
+  city: string | null;
+  /** Runner Score de identidade (mesmo do topo do app) */
+  score: number;
+  attrs: Record<string, number | null>;
+}
+
+/**
+ * Subconjunto SEGURO do perfil para a página pública (link compartilhável).
+ * Nunca expõe telefone, e-mail, lista de corridas ou nome completo — só a
+ * vitrine de identidade que o atleta escolhe mostrar. Null se ainda não há
+ * score confiável (calibrando) ou o usuário não existe.
+ */
+export async function getPublicProfile(userId: string): Promise<PublicProfile | null> {
+  const rows = await db
+    .select({
+      name: users.name,
+      role: users.role,
+      city: athleteProfiles.city,
+      level: athleteProfiles.level,
+      archetype: athleteProfiles.archetype,
+      brand: assessorias.name,
+    })
+    .from(users)
+    .leftJoin(athleteProfiles, eq(athleteProfiles.userId, users.id))
+    .leftJoin(assessorias, eq(assessorias.id, athleteProfiles.assessoriaId))
+    .where(eq(users.id, userId))
+    .limit(1);
+  const info = rows[0];
+  if (!info || info.role !== "athlete") return null;
+
+  const snap = await db
+    .select({ identityScore: scoreSnapshots.identityScore, attributes: scoreSnapshots.attributes })
+    .from(scoreSnapshots)
+    .where(eq(scoreSnapshots.userId, userId))
+    .orderBy(desc(scoreSnapshots.computedAt))
+    .limit(1);
+  const latest = snap[0];
+  if (!latest) return null; // sem snapshot = ainda calibrando, não expõe
+
+  return {
+    firstName: info.name.split(/\s+/)[0] ?? info.name,
+    initials: initialsOf(info.name),
+    brand: info.brand ?? "Elevo",
+    level: info.level,
+    archetype: info.archetype,
+    city: info.city,
+    score: latest.identityScore,
+    attrs: (latest.attributes as Record<string, number | null>) ?? {},
+  };
+}
+
 /** Dados completos de um atleta (para o perfil individual e o app do atleta). */
 export async function getAthleteDetail(userId: string) {
   const rows = await db

@@ -24,6 +24,7 @@ export default async function CartaPage() {
 
       {ready && a.latest ? (
         <CartaView
+          userId={a.userId}
           d={{
             name: a.name,
             firstName: a.name.split(" ")[0] ?? a.name,
@@ -32,6 +33,7 @@ export default async function CartaPage() {
             level: a.level,
             archetype: a.archetype,
             brand: a.assessoriaName ?? "Elevo",
+            score: a.latest.identityScore,
             geral: a.latest.geral,
             attrs: {
               ritmo: attrs.ritmo ?? null,

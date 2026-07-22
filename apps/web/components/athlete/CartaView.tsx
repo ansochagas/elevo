@@ -58,6 +58,9 @@ export interface CartaData {
   level: string | null;
   archetype: string | null;
   brand: string;
+  /** Runner Score de identidade (topo do app, ex.: 520) — número principal da carta */
+  score: number;
+  /** overall 0-100, usado só para o anel decorativo do skin Núcleo */
   geral: number;
   attrs: {
     ritmo: number | null;
@@ -69,11 +72,24 @@ export interface CartaData {
   };
 }
 
-export function CartaView({ d }: { d: CartaData }) {
+export function CartaView({ d, userId }: { d: CartaData; userId: string }) {
   const [skin, setSkin] = useState<Skin>("nucleo");
   const [share, setShare] = useState<ShareState>("idle");
+  const [copied, setCopied] = useState(false);
   const at = d.attrs;
   const v = (x: number | null) => x ?? 0;
+
+  async function copyLink() {
+    const url = `${window.location.origin}/r/${userId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
+    } catch {
+      // fallback: seleção manual via prompt
+      window.prompt("Copie o link da sua carta:", url);
+    }
+  }
 
   return (
     <>
@@ -82,7 +98,7 @@ export function CartaView({ d }: { d: CartaData }) {
           <div className="lab">Runner Score</div>
           <div className="rw">
             <div className="rg" style={{ background: `conic-gradient(var(--ac) 0 ${d.geral}%, rgba(255,255,255,.07) 0)` }} />
-            <div className="rc"><span className="n tnum">{d.geral}</span><span className="l">Geral</span></div>
+            <div className="rc"><span className="n tnum">{d.score}</span><span className="l">Score</span></div>
           </div>
           <div className="who">
             <div className="nm">{d.name}</div>
@@ -99,8 +115,8 @@ export function CartaView({ d }: { d: CartaData }) {
           <div className="in">
             <div className="top">
               <div className="ov">
-                <div className="n tnum">{d.geral}</div>
-                <div className="l">GERAL{d.level ? ` · ${d.level.toUpperCase()}` : ""}</div>
+                <div className="n tnum">{d.score}</div>
+                <div className="l">SCORE{d.level ? ` · ${d.level.toUpperCase()}` : ""}</div>
                 {d.archetype ? <div className="a">{d.archetype}</div> : null}
               </div>
               <div className="emb">{d.initials}</div>
@@ -120,8 +136,8 @@ export function CartaView({ d }: { d: CartaData }) {
         <div className={"skin k-mov" + (skin === "movimento" ? " on" : "")}>
           <div className="in">
             <div className="tag">{d.brand}</div>
-            <div className="num tnum">{d.geral}</div>
-            <div className="gl">Score geral</div>
+            <div className="num tnum">{d.score}</div>
+            <div className="gl">Runner Score</div>
             <div className="nm">{d.firstName}</div>
             {d.city ? <div className="loc">{d.city}</div> : null}
             <div className="pills tnum">
@@ -141,21 +157,26 @@ export function CartaView({ d }: { d: CartaData }) {
         ))}
       </div>
 
-      <button
-        type="button"
-        className="btnp sharebtn"
-        onClick={() => shareCarta(setShare, d.firstName)}
-        disabled={share === "working"}
-      >
-        {share === "working" ? "Gerando imagem…" : "Compartilhar minha carta"}
-      </button>
+      <div className="sharerow">
+        <button
+          type="button"
+          className="btnp sharebtn"
+          onClick={() => shareCarta(setShare, d.firstName)}
+          disabled={share === "working"}
+        >
+          {share === "working" ? "Gerando imagem…" : "Compartilhar imagem"}
+        </button>
+        <button type="button" className="btns sharebtn" onClick={copyLink}>
+          {copied ? "Link copiado ✓" : "Copiar link da carta"}
+        </button>
+      </div>
       {share === "error" ? (
         <p className="uplmsg" style={{ textAlign: "center", color: "var(--sum)" }}>
           Não consegui gerar a imagem agora. Tente de novo em instantes.
         </p>
       ) : (
         <p className="uplmsg" style={{ textAlign: "center" }}>
-          Gera a imagem da sua carta para postar no Stories, mandar no WhatsApp ou salvar no celular.
+          Poste a imagem no Stories/WhatsApp, ou compartilhe o link — quem abrir vê sua carta e conhece a Elevo.
         </p>
       )}
     </>

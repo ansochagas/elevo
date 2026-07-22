@@ -10,7 +10,7 @@ export default auth((req) => {
 
   // Não logado: login e convite são públicos.
   if (!session?.user) {
-    if (pathname === "/login" || pathname.startsWith("/convite")) return;
+    if (pathname === "/login" || pathname.startsWith("/convite") || pathname.startsWith("/r/")) return;
     return NextResponse.redirect(new URL("/login", req.nextUrl));
   }
 
