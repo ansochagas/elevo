@@ -2,6 +2,46 @@
 
 import { useState } from "react";
 
+type ShareState = "idle" | "working" | "done" | "error";
+
+async function shareCarta(setState: (s: ShareState) => void, firstName: string) {
+  setState("working");
+  try {
+    const res = await fetch("/atleta/carta/og", { cache: "no-store" });
+    if (!res.ok) throw new Error("falha ao gerar imagem");
+    const blob = await res.blob();
+    const file = new File([blob], `carta-elevo-${firstName.toLowerCase()}.png`, { type: "image/png" });
+
+    const nav = navigator as Navigator & { canShare?: (d?: ShareData) => boolean };
+    if (nav.canShare && nav.canShare({ files: [file] })) {
+      await nav.share({
+        files: [file],
+        title: "Minha carta Elevo",
+        text: "Meu Runner Score na Elevo 🏃",
+      });
+      setState("done");
+    } else {
+      // fallback: baixa a imagem para o usuário postar manualmente
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = file.name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setState("done");
+    }
+  } catch (e) {
+    // usuário cancelar o share nativo não é erro
+    if (e instanceof DOMException && e.name === "AbortError") {
+      setState("idle");
+      return;
+    }
+    setState("error");
+  }
+}
+
 type Skin = "nucleo" | "arena" | "movimento";
 
 const SKINS: { id: Skin; label: string }[] = [
@@ -31,6 +71,7 @@ export interface CartaData {
 
 export function CartaView({ d }: { d: CartaData }) {
   const [skin, setSkin] = useState<Skin>("nucleo");
+  const [share, setShare] = useState<ShareState>("idle");
   const at = d.attrs;
   const v = (x: number | null) => x ?? 0;
 
@@ -100,10 +141,23 @@ export function CartaView({ d }: { d: CartaData }) {
         ))}
       </div>
 
-      <p className="uplmsg" style={{ textAlign: "center" }}>
-        O compartilhamento com um toque (Stories, WhatsApp) chega em breve — por enquanto, mostre a carta direto do
-        seu celular. 😉
-      </p>
+      <button
+        type="button"
+        className="btnp sharebtn"
+        onClick={() => shareCarta(setShare, d.firstName)}
+        disabled={share === "working"}
+      >
+        {share === "working" ? "Gerando imagem…" : "Compartilhar minha carta"}
+      </button>
+      {share === "error" ? (
+        <p className="uplmsg" style={{ textAlign: "center", color: "var(--sum)" }}>
+          Não consegui gerar a imagem agora. Tente de novo em instantes.
+        </p>
+      ) : (
+        <p className="uplmsg" style={{ textAlign: "center" }}>
+          Gera a imagem da sua carta para postar no Stories, mandar no WhatsApp ou salvar no celular.
+        </p>
+      )}
     </>
   );
 }

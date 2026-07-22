@@ -224,6 +224,8 @@ td.r { text-align: right; }
 .skinsel { display: flex; gap: 8px; margin-bottom: 16px; }
 .skinbtn { flex: 1; background: var(--s1); border: 1px solid var(--bd); color: #cdd4db; border-radius: 10px; padding: 9px 4px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .2s; }
 .skinbtn.on { background: var(--ac-deep); border-color: var(--ac); color: var(--ac); }
+.sharebtn { width: 100%; margin-top: 4px; }
+.sharebtn:disabled { opacity: .6; cursor: default; }
 .dests { display: flex; justify-content: space-between; gap: 6px; }
 .dest { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; background: transparent; border: none; cursor: pointer; color: #cdd4db; }
 .dest .ic { width: 44px; height: 44px; border-radius: 13px; background: var(--s1); border: 1px solid var(--bd); display: flex; align-items: center; justify-content: center; }
