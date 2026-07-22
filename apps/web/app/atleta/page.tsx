@@ -32,7 +32,10 @@ export default async function AtletaPage() {
 
       <header className="atop">
         <div className="brand"><span className="g">E</span>Elevo</div>
-        <a className="sairlink" href="/sair">Sair</a>
+        <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <Link className="sairlink" href="/atleta/config">Configurações</Link>
+          <a className="sairlink" href="/sair">Sair</a>
+        </span>
       </header>
 
       <section className="ahero">

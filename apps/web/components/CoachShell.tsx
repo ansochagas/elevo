@@ -9,7 +9,7 @@ export function CoachShell({
 }: {
   assessoriaName: string;
   coachName: string;
-  active: "painel" | "alunos";
+  active: "painel" | "alunos" | "config";
   children: ReactNode;
 }) {
   return (
@@ -24,6 +24,7 @@ export function CoachShell({
           <nav className="cnav">
             <Link href="/" className={active === "painel" ? "on" : ""}>Painel</Link>
             <Link href="/alunos" className={active === "alunos" ? "on" : ""}>Alunos</Link>
+            <Link href="/config" className={active === "config" ? "on" : ""}>Configurações</Link>
           </nav>
           <div className="who">
             <div>

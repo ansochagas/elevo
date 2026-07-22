@@ -130,16 +130,19 @@ export async function getAthleteDetail(userId: string) {
   const rows = await db
     .select({
       name: users.name,
+      email: users.email,
       phone: users.phone,
       city: athleteProfiles.city,
       level: athleteProfiles.level,
       archetype: athleteProfiles.archetype,
       assessoriaId: athleteProfiles.assessoriaId,
+      assessoriaName: assessorias.name,
       inviteToken: athleteProfiles.inviteToken,
       consentAt: athleteProfiles.consentAt,
     })
     .from(users)
     .leftJoin(athleteProfiles, eq(athleteProfiles.userId, users.id))
+    .leftJoin(assessorias, eq(assessorias.id, athleteProfiles.assessoriaId))
     .where(eq(users.id, userId))
     .limit(1);
   const info = rows[0];
@@ -179,16 +182,19 @@ export async function getAthleteDetail(userId: string) {
   return {
     userId,
     name: info.name,
+    email: info.email,
     initials: initialsOf(info.name),
     phone: info.phone,
     city: info.city,
     level: info.level,
     archetype: info.archetype,
     assessoriaId: info.assessoriaId,
+    assessoriaName: info.assessoriaName,
     invitePending: info.inviteToken !== null,
     inviteToken: info.inviteToken,
     consentAt: info.consentAt,
     latest,
+    prev,
     delta: latest && prev ? latest.identityScore - prev.identityScore : null,
     activities: actRows,
     cleanCount: cleanActs.length,

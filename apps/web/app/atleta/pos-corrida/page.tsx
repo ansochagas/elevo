@@ -1,99 +1,74 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { athlete, ATTR_LABEL } from "@/lib/athlete";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import { getAthleteDetail } from "@/lib/data";
+import { ATTR_LABEL, type AthAttrKey } from "@/lib/athlete";
+import { BottomNav } from "@/components/athlete/BottomNav";
+import { RevealView } from "@/components/athlete/RevealView";
 
-const km = (v: number) => v.toFixed(1).replace(".", ",");
+const KEYS: AthAttrKey[] = ["ritmo", "resistencia", "regularidade", "finalizacao", "subida", "evolucao"];
 
-export default function PosCorridaPage() {
-  const a = athlete;
-  const lr = a.lastRun;
-  const [score, setScore] = useState(lr.scoreFrom);
-  const [ringP, setRingP] = useState(lr.scoreFrom / 10);
-  const [shown, setShown] = useState(false);
-  const [barsOn, setBarsOn] = useState(false);
+export default async function PosCorridaPage() {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+  const a = await getAthleteDetail(session.user.id);
+  if (!a) redirect("/login");
 
-  useEffect(() => {
-    const rm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (rm) {
-      setScore(lr.scoreTo);
-      setRingP(lr.scoreTo / 10);
-      setShown(true);
-      setBarsOn(true);
-      return;
-    }
-    setShown(true);
-    const dur = 1300;
-    let start: number | null = null;
-    let raf = 0;
-    const ease = (t: number) => 1 - Math.pow(1 - t, 3);
-    const step = (ts: number) => {
-      if (start === null) start = ts;
-      const p = Math.min((ts - start) / dur, 1);
-      const v = lr.scoreFrom + (lr.scoreTo - lr.scoreFrom) * ease(p);
-      setScore(Math.round(v));
-      setRingP(v / 10);
-      if (p < 1) raf = requestAnimationFrame(step);
-    };
-    const t0 = setTimeout(() => { raf = requestAnimationFrame(step); }, 250);
-    const t1 = setTimeout(() => setBarsOn(true), 600);
-    return () => { clearTimeout(t0); clearTimeout(t1); cancelAnimationFrame(raf); };
-  }, [lr.scoreFrom, lr.scoreTo]);
+  const lastRun = a.activities.find((r) => !r.flaggedReason) ?? null;
 
-  const fade = (delay: number, base = "") => ({
-    className: (base ? base + " " : "") + "fade" + (shown ? " in" : ""),
-    style: { transitionDelay: `${delay}ms` },
-  });
+  if (!lastRun || !a.latest) {
+    return (
+      <main className="ashell">
+        <h1 className="sr-only">Corridas</h1>
+        <header className="atop">
+          <div className="brand"><span className="g">E</span>Elevo</div>
+          <span className="set" style={{ fontSize: 14, fontWeight: 600 }}>Corridas</span>
+        </header>
+        <section className="acard">
+          <div className="emptybox" style={{ padding: "28px 8px" }}>
+            <div className="big">A análise nasce com a primeira corrida</div>
+            <p>Envie suas corridas no Perfil — cada nova corrida ganha a sua revelação aqui.</p>
+            <Link href="/atleta" className="btnp" style={{ textDecoration: "none" }}>Enviar corridas</Link>
+          </div>
+        </section>
+        <BottomNav active="corridas" />
+      </main>
+    );
+  }
+
+  const pace = (() => {
+    const p = lastRun.movingSec / 60 / lastRun.distanceKm;
+    const m = Math.floor(p);
+    const s = Math.round((p - m) * 60);
+    return `${m}:${String(s === 60 ? 0 : s).padStart(2, "0")}/km`;
+  })();
+  const runLine = `${lastRun.distanceKm.toFixed(1).replace(".", ",")} km · ${pace} · ${lastRun.start.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`;
+
+  const latestAttrs = (a.latest.attributes ?? {}) as Record<string, number | null>;
+  const prevAttrs = (a.prev?.attributes ?? {}) as Record<string, number | null>;
+  const changed = KEYS.map((k) => {
+    const now = latestAttrs[k];
+    const before = prevAttrs[k];
+    if (now == null || before == null) return null;
+    const delta = now - before;
+    return delta > 0 ? { label: ATTR_LABEL[k], delta, width: now } : null;
+  })
+    .filter((x): x is { label: string; delta: number; width: number } => x !== null)
+    .sort((x, y) => y.delta - x.delta)
+    .slice(0, 3);
 
   return (
-    <main className="reveal">
-      <h1 className="sr-only">Sua corrida foi analisada</h1>
-      <div className="synced">
-        <span className="tk">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--ac-ink)" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 12l5 5L20 6" /></svg>
-        </span>
-        Corrida sincronizada
-      </div>
-      <div className="rl"><b>{km(lr.distanceKm)} km</b> · {lr.timeStr} · {lr.paceStr} · Fortaleza</div>
-
-      <div className="ring">
-        <div className="rg" style={{ background: `conic-gradient(var(--ac) 0 ${ringP.toFixed(1)}%, rgba(255,255,255,.07) 0)` }} />
-        <div className="rc">
-          <span className="lab">Runner Score</span>
-          <span className="n tnum">{score}</span>
-        </div>
-      </div>
-      <div {...fade(150, "hd")}>+{lr.scoreTo - lr.scoreFrom} desde a última corrida</div>
-
-      <div {...fade(300, "sct")}>O que mudou</div>
-      <div className="chg tnum">
-        {lr.changed.map((c, i) => (
-          <div key={c.key} {...fade(420 + i * 130, "row")}>
-            <span className="cl">{ATTR_LABEL[c.key]}</span>
-            <span className="ct"><span className="cf" style={{ width: barsOn ? `${a.attributes[c.key]}%` : 0 }} /></span>
-            <span className="cd">+{c.delta}</span>
-          </div>
-        ))}
-      </div>
-
-      <div {...fade(820, "badge")}>
-        <span className="bi">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3c1.5 3 1 5-1 7 3 0 5 2 5 5a4 4 0 0 1-8 0c0-1 .3-1.8.8-2.5C7 16 6 18 8 21c-3-1-5-3.5-5-7 0-5 5-6 9-11z" /></svg>
-        </span>
-        <div>
-          <div className="bt">Nova conquista</div>
-          <div className="bn">{lr.achievement}</div>
-        </div>
-      </div>
-
-      <div {...fade(980, "cta")}>
-        <button className="btn p" type="button">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" /><path d="M12 15V3" /><path d="M8 7l4-4 4 4" /></svg>
-          Compartilhar minha carta
-        </button>
-        <Link href="/atleta" className="btn s">Ver meu perfil</Link>
-      </div>
-    </main>
+    <>
+      <RevealView
+        d={{
+          runLine,
+          scoreFrom: a.prev?.identityScore ?? a.latest.identityScore,
+          scoreTo: a.latest.identityScore,
+          calibrating: a.calibrating,
+          changed,
+        }}
+      />
+      <BottomNav active="corridas" />
+    </>
   );
 }

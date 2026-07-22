@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "./db";
-import { athleteProfiles, users } from "./db/schema";
+import { assessorias, athleteProfiles, users } from "./db/schema";
 import { getAssessoriaOf } from "./data";
 import { ingestFiles, type IngestFile } from "./ingest";
 
@@ -142,6 +142,57 @@ export async function activateInvite(formData: FormData) {
     .where(eq(athleteProfiles.userId, prof.userId));
 
   redirect("/login?ativado=1");
+}
+
+/** Configurações: nome da assessoria (só o dono). */
+export async function updateAssessoria(formData: FormData) {
+  const { assessoria } = await requireCoach();
+  const name = String(formData.get("name") ?? "").trim();
+  if (name) {
+    await db.update(assessorias).set({ name }).where(eq(assessorias.id, assessoria.id));
+  }
+  revalidatePath("/");
+  revalidatePath("/config");
+  redirect("/config?ok=assessoria");
+}
+
+/** Configurações: nome e e-mail da própria conta (qualquer papel logado). */
+export async function updateAccount(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+  const name = String(formData.get("name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const back = session.user.role === "coach" ? "/config" : "/atleta/config";
+  const updates: Record<string, unknown> = {};
+  if (name) updates.name = name;
+  if (email) updates.email = email;
+  if (Object.keys(updates).length) {
+    try {
+      await db.update(users).set(updates).where(eq(users.id, session.user.id));
+    } catch {
+      redirect(`${back}?erro=email`);
+    }
+  }
+  revalidatePath(back);
+  redirect(`${back}?ok=conta`);
+}
+
+/** Configurações: trocar a própria senha (exige a atual). */
+export async function changePassword(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+  const back = session.user.role === "coach" ? "/config" : "/atleta/config";
+  const current = String(formData.get("current") ?? "");
+  const next = String(formData.get("next") ?? "");
+  if (next.length < 8) redirect(`${back}?erro=senha-curta`);
+  const rows = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
+  const u = rows[0];
+  if (!u || !bcrypt.compareSync(current, u.passwordHash)) redirect(`${back}?erro=senha-atual`);
+  await db
+    .update(users)
+    .set({ passwordHash: bcrypt.hashSync(next, 10) })
+    .where(eq(users.id, session.user.id));
+  redirect(`${back}?ok=senha`);
 }
 
 /** Upload em lote (arquivos já explodidos no cliente). target: o próprio atleta ou aluno do treinador. */
