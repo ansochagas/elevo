@@ -58,17 +58,25 @@ export async function generateBriefWithLlm(userInput: string): Promise<AthleteBr
   }
   const data = (await res.json()) as { content?: ToolUseBlock[] };
   const block = data.content?.find((b) => b.type === "tool_use" && b.name === BRIEF_TOOL.name);
-  const input = block?.input as Partial<AthleteBrief> | undefined;
-  if (!input || typeof input.headline !== "string" || !Array.isArray(input.watch)) {
+  const input = block?.input as Record<string, unknown> | undefined;
+  if (!input || typeof input.headline !== "string") {
     throw new Error("Resposta da IA fora do contrato.");
   }
+  // tolerante: o modelo às vezes devolve listas de 1 item como string
+  const toArr = (x: unknown): string[] =>
+    Array.isArray(x)
+      ? x.filter((s): s is string => typeof s === "string")
+      : typeof x === "string" && x.trim()
+        ? [x]
+        : [];
+  const str = (x: unknown, fallback: string): string => (typeof x === "string" && x.trim() ? x : fallback);
   return {
     headline: input.headline,
-    focus: input.focus ?? "—",
-    reading: input.reading ?? "",
-    watch: input.watch,
-    evidence: Array.isArray(input.evidence) ? input.evidence : [],
-    coachNote: input.coachNote ?? "O treino é a sua decisão.",
+    focus: str(input.focus, "—"),
+    reading: str(input.reading, ""),
+    watch: toArr(input.watch),
+    evidence: toArr(input.evidence),
+    coachNote: str(input.coachNote, "O treino é a sua decisão."),
     source: "ia",
   };
 }
