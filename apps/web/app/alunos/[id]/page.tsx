@@ -7,6 +7,8 @@ import { CoachShell } from "@/components/CoachShell";
 import { UploadButton } from "@/components/UploadButton";
 import { EvolutionChart } from "@/components/charts";
 import { NumbersBlock, RecordsBlock, ExplainedAttributes, FocusBlock } from "@/components/Kpis";
+import { WeeklyBrief } from "@/components/WeeklyBrief";
+import { generateAthleteBrief } from "@/lib/intelligence/generate";
 
 const fmtDate = (d: Date) =>
   d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
@@ -36,6 +38,7 @@ export default async function AlunoDetalhePage({
   if (!a || a.assessoriaId !== assessoria.id) notFound();
 
   const attrs = (a.latest?.attributes ?? null) as Record<string, number | null> | null;
+  const brief = a.cleanCount > 0 ? await generateAthleteBrief(a, new Date()) : null;
   const inviteUrl = a.inviteToken ? `/convite/${a.inviteToken}` : null;
   const waHref = a.phone
     ? `https://wa.me/${a.phone.startsWith("55") ? a.phone : `55${a.phone}`}`
@@ -112,6 +115,8 @@ export default async function AlunoDetalhePage({
         )}
         <UploadButton targetUserId={a.userId} label="Enviar corridas por ele" />
       </div>
+
+      {brief ? <div style={{ marginBottom: 14 }}><WeeklyBrief brief={brief} /></div> : null}
 
       {a.cleanCount > 0 ? (
         <div className="panel" style={{ marginBottom: 14 }}>
