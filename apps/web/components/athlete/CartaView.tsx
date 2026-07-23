@@ -4,10 +4,10 @@ import { useState } from "react";
 
 type ShareState = "idle" | "working" | "done" | "error";
 
-async function shareCarta(setState: (s: ShareState) => void, firstName: string) {
+async function shareCarta(setState: (s: ShareState) => void, firstName: string, skin: Skin) {
   setState("working");
   try {
-    const res = await fetch("/atleta/carta/og", { cache: "no-store" });
+    const res = await fetch(`/atleta/carta/og?skin=${skin}`, { cache: "no-store" });
     if (!res.ok) throw new Error("falha ao gerar imagem");
     const blob = await res.blob();
     const file = new File([blob], `carta-elevo-${firstName.toLowerCase()}.png`, { type: "image/png" });
@@ -161,7 +161,7 @@ export function CartaView({ d, userId }: { d: CartaData; userId: string }) {
         <button
           type="button"
           className="btnp sharebtn"
-          onClick={() => shareCarta(setShare, d.firstName)}
+          onClick={() => shareCarta(setShare, d.firstName, skin)}
           disabled={share === "working"}
         >
           {share === "working" ? "Gerando imagem…" : "Compartilhar imagem"}
@@ -176,7 +176,8 @@ export function CartaView({ d, userId }: { d: CartaData; userId: string }) {
         </p>
       ) : (
         <p className="uplmsg" style={{ textAlign: "center" }}>
-          Poste a imagem no Stories/WhatsApp, ou compartilhe o link — quem abrir vê sua carta e conhece a Elevo.
+          A imagem sai na skin que você escolheu acima. Poste no Stories/WhatsApp, ou compartilhe o link —
+          quem abrir vê sua carta e conhece a Elevo.
         </p>
       )}
     </>
