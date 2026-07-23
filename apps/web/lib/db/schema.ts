@@ -70,6 +70,25 @@ export const activities = pgTable(
   (t) => [uniqueIndex("activities_user_start_idx").on(t.userId, t.start)],
 );
 
+/** Leitura da semana (raio-x) gerada pela camada de IA — cache por atleta+semana. */
+export const briefs = pgTable(
+  "briefs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    /** segunda-feira da semana de referência (YYYY-MM-DD) */
+    weekOf: text("week_of").notNull(),
+    /** o AthleteBrief serializado */
+    brief: jsonb("brief").notNull(),
+    /** proveniência: "ia" ou "deterministico" */
+    source: text("source").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("briefs_user_week_idx").on(t.userId, t.weekOf)],
+);
+
 /** Snapshot do Runner Score calculado pelo motor (identidade + forma). */
 export const scoreSnapshots = pgTable("score_snapshots", {
   id: uuid("id").primaryKey().defaultRandom(),

@@ -50,6 +50,9 @@ export interface DiagnosticSnapshot {
 }
 
 /** Segunda-feira (UTC) da semana de `now`, em ISO curto (YYYY-MM-DD). */
+export function weekOfMonday(now: Date): string {
+  return mondayOf(now);
+}
 function mondayOf(now: Date): string {
   const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   const dow = (d.getUTCDay() + 6) % 7; // 0 = segunda

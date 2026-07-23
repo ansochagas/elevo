@@ -8,7 +8,7 @@ import { UploadButton } from "@/components/UploadButton";
 import { EvolutionChart } from "@/components/charts";
 import { NumbersBlock, RecordsBlock, ExplainedAttributes, FocusBlock } from "@/components/Kpis";
 import { WeeklyBrief } from "@/components/WeeklyBrief";
-import { generateAthleteBrief } from "@/lib/intelligence/generate";
+import { getWeeklyBrief } from "@/lib/intelligence/weekly";
 
 const fmtDate = (d: Date) =>
   d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
@@ -38,7 +38,7 @@ export default async function AlunoDetalhePage({
   if (!a || a.assessoriaId !== assessoria.id) notFound();
 
   const attrs = (a.latest?.attributes ?? null) as Record<string, number | null> | null;
-  const brief = a.cleanCount > 0 ? await generateAthleteBrief(a, new Date()) : null;
+  const brief = a.cleanCount > 0 ? await getWeeklyBrief(a, new Date()) : null;
   const inviteUrl = a.inviteToken ? `/convite/${a.inviteToken}` : null;
   const waHref = a.phone
     ? `https://wa.me/${a.phone.startsWith("55") ? a.phone : `55${a.phone}`}`
