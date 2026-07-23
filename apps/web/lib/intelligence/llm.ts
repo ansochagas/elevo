@@ -56,10 +56,7 @@ export async function generateBriefWithLlm(userInput: string): Promise<AthleteBr
       model: process.env.ELEVO_AI_MODEL || DEFAULT_MODEL,
       max_tokens: 1000,
       system: BRIEF_SYSTEM_PROMPT,
-      messages: [
-        { role: "user", content: `DADOS:\n${userInput}` },
-        { role: "assistant", content: "{" }, // prefill: força JSON limpo
-      ],
+      messages: [{ role: "user", content: `DADOS:\n${userInput}` }],
     }),
   });
 
@@ -68,12 +65,13 @@ export async function generateBriefWithLlm(userInput: string): Promise<AthleteBr
   }
   const data = (await res.json()) as { content?: TextBlock[] };
   const text = data.content?.find((b) => b.type === "text")?.text ?? "";
-  const raw = "{" + text;
-  const jsonStr = raw.slice(0, raw.lastIndexOf("}") + 1);
+  // extrai o objeto JSON (robusto a fences/preâmbulo): do primeiro { ao último }
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error("Resposta da IA sem JSON.");
 
   let parsed: Record<string, unknown>;
   try {
-    parsed = JSON.parse(jsonStr) as Record<string, unknown>;
+    parsed = JSON.parse(match[0]) as Record<string, unknown>;
   } catch {
     throw new Error("Resposta da IA não é JSON válido.");
   }
