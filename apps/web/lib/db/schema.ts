@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, integer, real, jsonb, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, integer, real, jsonb, boolean, uniqueIndex } from "drizzle-orm/pg-core";
 
 /** Papéis do usuário no app único (rota certa por papel no login). */
 export type UserRole = "coach" | "athlete";
@@ -42,6 +42,8 @@ export const athleteProfiles = pgTable("athlete_profiles", {
   inviteToken: text("invite_token"),
   /** quando o atleta aceitou que o treinador veja seus dados (LGPD) */
   consentAt: timestamp("consent_at", { withTimezone: true }),
+  /** atleta optou por deixar o perfil público descobrível em buscadores (opt-in) */
+  discoverable: boolean("public_discoverable").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

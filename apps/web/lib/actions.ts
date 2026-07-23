@@ -176,6 +176,23 @@ export async function updateAssessoriaLogo(formData: FormData) {
   redirect(`/config?ok=${remove ? "logo-removida" : "logo"}`);
 }
 
+/** Configurações do atleta: opt-in para o perfil público ser descobrível em buscadores. */
+export async function updateDiscoverable(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+  const on = formData.get("discoverable") === "on";
+  try {
+    await db
+      .update(athleteProfiles)
+      .set({ discoverable: on })
+      .where(eq(athleteProfiles.userId, session.user.id));
+  } catch {
+    redirect("/atleta/config?erro=descoberta-migracao");
+  }
+  revalidatePath("/atleta/config");
+  redirect(`/atleta/config?ok=${on ? "descoberta-on" : "descoberta-off"}`);
+}
+
 /** Configurações: nome e e-mail da própria conta (qualquer papel logado). */
 export async function updateAccount(formData: FormData) {
   const session = await auth();

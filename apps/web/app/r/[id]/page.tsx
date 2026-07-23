@@ -25,8 +25,9 @@ export async function generateMetadata({
   return {
     title,
     description,
-    // link compartilhável funciona, mas não indexável sem opt-in explícito (LGPD)
-    robots: { index: false, follow: false },
+    // indexável em buscadores só com opt-in explícito do atleta (LGPD);
+    // o link compartilhável funciona nos dois casos.
+    robots: { index: p.discoverable, follow: p.discoverable },
     openGraph: {
       title,
       description,

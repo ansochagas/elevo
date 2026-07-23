@@ -1,16 +1,20 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { changePassword, updateAccount } from "@/lib/actions";
+import { changePassword, updateAccount, updateDiscoverable } from "@/lib/actions";
+import { getDiscoverable } from "@/lib/data";
 import { BottomNav } from "@/components/athlete/BottomNav";
 
 const OK: Record<string, string> = {
   conta: "Dados atualizados.",
   senha: "Senha alterada com sucesso.",
+  "descoberta-on": "Seu perfil agora pode aparecer em buscadores.",
+  "descoberta-off": "Seu perfil não aparece mais em buscadores.",
 };
 const ERRO: Record<string, string> = {
   email: "Este e-mail já está em uso.",
   "senha-curta": "A nova senha precisa ter pelo menos 8 caracteres.",
   "senha-atual": "A senha atual não confere.",
+  "descoberta-migracao": "Essa opção ainda não está disponível — avise o suporte.",
 };
 
 export default async function AtletaConfigPage({
@@ -21,6 +25,7 @@ export default async function AtletaConfigPage({
   const session = await auth();
   if (!session?.user) redirect("/login");
   const { ok, erro } = await searchParams;
+  const discoverable = await getDiscoverable(session.user.id);
 
   return (
     <main className="ashell">
@@ -45,6 +50,21 @@ export default async function AtletaConfigPage({
             <input id="email" name="email" type="email" defaultValue={session.user.email ?? ""} required />
           </div>
           <button className="btnp" type="submit">Salvar</button>
+        </form>
+      </section>
+
+      <section className="acard">
+        <h3>Perfil público</h3>
+        <p className="uplmsg" style={{ marginTop: 0 }}>
+          O link da sua carta sempre funciona quando você compartilha. Ligue esta opção se quiser que
+          seu perfil também possa <b>aparecer em buscadores</b> como o Google.
+        </p>
+        <form action={updateDiscoverable} className="toggleform">
+          <label className="toggle">
+            <input type="checkbox" name="discoverable" defaultChecked={discoverable} />
+            <span>Deixar meu perfil descobrível em buscadores</span>
+          </label>
+          <button className="btnp" type="submit">Salvar preferência</button>
         </form>
       </section>
 

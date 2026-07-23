@@ -226,6 +226,22 @@ export interface PublicProfile {
   /** Runner Score de identidade (mesmo do topo do app) */
   score: number;
   attrs: Record<string, number | null>;
+  /** atleta optou por deixar indexável em buscadores */
+  discoverable: boolean;
+}
+
+/** Lê o opt-in de descoberta do atleta (false se a coluna ainda não migrou). */
+export async function getDiscoverable(userId: string): Promise<boolean> {
+  try {
+    const r = await db
+      .select({ discoverable: athleteProfiles.discoverable })
+      .from(athleteProfiles)
+      .where(eq(athleteProfiles.userId, userId))
+      .limit(1);
+    return r[0]?.discoverable ?? false;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -271,6 +287,7 @@ export async function getPublicProfile(userId: string): Promise<PublicProfile | 
     city: info.city,
     score: latest.identityScore,
     attrs,
+    discoverable: await getDiscoverable(userId),
   };
 }
 
