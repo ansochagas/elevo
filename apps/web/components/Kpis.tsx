@@ -40,7 +40,7 @@ export function NumbersBlock({ m }: { m: RunnerMetrics }) {
       </div>
       <div className="numtile">
         <div className="k">Sequência ativa</div>
-        <div className="v">{m.activeWeekStreak}<span className="u">{m.activeWeekStreak === 1 ? "sem" : "sem"}</span></div>
+        <div className="v">{m.activeWeekStreak}<span className="u">sem</span></div>
         <div className="d flat" style={{ color: "var(--t3)" }}>semanas seguidas correndo</div>
       </div>
       <div className="numtile">

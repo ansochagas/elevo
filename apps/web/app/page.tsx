@@ -129,6 +129,7 @@ export default async function PainelPage() {
           </div>
 
           <div className="grid">
+            <div className="rstack">
             <div className="panel">
               <div className="ph">
                 <h2>
@@ -141,7 +142,13 @@ export default async function PainelPage() {
                 {atRisk.length ? <span className="cnt">{atRisk.length}</span> : null}
               </div>
               {atRisk.length === 0 ? (
-                <p className="uplmsg">Ninguém em risco agora — turma em dia. 👏</p>
+                <div className="allclear">
+                  <div className="ic">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                  </div>
+                  <div className="t">Turma em dia</div>
+                  <div className="s">Ninguém em risco agora. Quando um aluno sumir ou o score cair, ele aparece aqui para você agir na hora.</div>
+                </div>
               ) : (
                 atRisk.map((a) => (
                   <div className="arow" key={a.userId}>
@@ -170,6 +177,14 @@ export default async function PainelPage() {
                 ))
               )}
             </div>
+              <div className="panel">
+                <div className="ph"><h2>Ações rápidas</h2></div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <Link className="btns" href="/alunos/novo">+ Adicionar aluno</Link>
+                  <Link className="btns" href="/alunos">Ver todos os alunos</Link>
+                </div>
+              </div>
+            </div>
 
             <div className="rstack">
               <div className="panel evo">
@@ -179,6 +194,11 @@ export default async function PainelPage() {
                     Os scores aparecem quando os alunos tiverem 8+ corridas válidas. Envie os históricos para
                     acelerar a calibração.
                   </p>
+                ) : scored.length < 3 ? (
+                  <div className="subm tnum" style={{ marginBottom: 0 }}>
+                    {evolving.length} de {scored.length} {scored.length === 1 ? "aluno" : "alunos"} com score{" "}
+                    {evolving.length > 0 ? "evoluindo" : "estável"} · média <b>{avgScore}</b>
+                  </div>
                 ) : (
                   <>
                     <div className="big tnum">
@@ -201,13 +221,6 @@ export default async function PainelPage() {
                   </p>
                 </div>
               ) : null}
-              <div className="panel">
-                <div className="ph"><h2>Ações rápidas</h2></div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <Link className="btns" href="/alunos/novo">+ Adicionar aluno</Link>
-                  <Link className="btns" href="/alunos">Ver todos os alunos</Link>
-                </div>
-              </div>
             </div>
           </div>
 

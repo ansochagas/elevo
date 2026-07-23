@@ -17,7 +17,7 @@ export default async function NovoAlunoPage({
 
   return (
     <CoachShell assessoriaName={assessoria.name} coachName={session.user.name ?? ""} logoUrl={assessoria.logoUrl} active="alunos">
-      <div className="panel" style={{ maxWidth: 480 }}>
+      <div className="panel" style={{ maxWidth: 480, margin: "0 auto" }}>
         <div className="ph"><h2>Adicionar aluno</h2></div>
         {erro === "nome" ? <div className="notice warn">Informe o nome do aluno.</div> : null}
         {erro === "email" ? <div className="notice warn">Este e-mail já está em uso.</div> : null}
