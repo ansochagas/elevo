@@ -37,25 +37,13 @@ REGRAS INEGOCIÁVEIS:
 3. Fundamente as interpretações nas REGRAS fornecidas (ciência curada). Não traga conhecimento geral que vá além ou contradiga essas regras.
 4. Português do Brasil, tom objetivo e conciso, direto ao treinador. Sem floreio, sem discurso motivacional.
 
-Responda EXCLUSIVAMENTE chamando a ferramenta registrar_briefing.`;
-
-/** Esquema da ferramenta de saída estruturada (forçada via tool_choice). */
-export const BRIEF_TOOL = {
-  name: "registrar_briefing",
-  description: "Registra a leitura da semana do aluno para o treinador.",
-  input_schema: {
-    type: "object",
-    properties: {
-      headline: { type: "string", description: "Uma linha sobre o estado do aluno nesta semana." },
-      focus: { type: "string", description: "Área de foco sugerida (nome do atributo)." },
-      reading: { type: "string", description: "2-4 frases interpretando os números, citando-os." },
-      watch: { type: "array", items: { type: "string" }, description: "2-3 pontos para o treinador observar. Nunca prescrição." },
-      evidence: { type: "array", items: { type: "string" }, description: "Os números-base usados na leitura." },
-      coachNote: { type: "string", description: "Frase que devolve a decisão de treino ao treinador." },
-    },
-    required: ["headline", "focus", "reading", "watch", "evidence", "coachNote"],
-  },
-} as const;
+Responda EXCLUSIVAMENTE com um objeto JSON válido — sem texto antes ou depois, sem blocos de código — com exatamente estas chaves:
+- "headline" (string): uma linha sobre o estado do aluno nesta semana.
+- "focus" (string): área de foco sugerida (nome do atributo).
+- "reading" (string): 2-4 frases interpretando os números, citando-os.
+- "watch" (lista de strings): 2-3 pontos para o treinador observar. Nunca prescrição.
+- "evidence" (lista de strings): os números-base usados na leitura.
+- "coachNote" (string): frase que devolve a decisão de treino ao treinador.`;
 
 /** Monta o bloco DADOS (grounding legível) a partir do snapshot + regras. */
 export function buildBriefInput(snap: DiagnosticSnapshot, rules: RunningRule[]): string {

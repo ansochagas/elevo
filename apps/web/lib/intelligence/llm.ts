@@ -9,10 +9,19 @@
  * Importante (LGPD/privacidade): a API da Anthropic não treina no conteúdo
  * enviado. Ainda assim, só mandamos o snapshot (números), nunca dado sensível.
  */
-import { BRIEF_SYSTEM_PROMPT, BRIEF_TOOL, type AthleteBrief } from "./brief";
+import { BRIEF_SYSTEM_PROMPT, type AthleteBrief } from "./brief";
 
 const API_URL = "https://api.anthropic.com/v1/messages";
 const DEFAULT_MODEL = "claude-sonnet-5";
+
+/** Remove qualquer tag tipo <...> que o modelo eventualmente vaze num campo. */
+const clean = (s: string): string => s.replace(/<[^>]*>/g, "").trim();
+/** Coage para lista de strings limpas (o modelo às vezes manda string única). */
+const toArr = (x: unknown): string[] =>
+  (Array.isArray(x) ? x : typeof x === "string" && x.trim() ? [x] : [])
+    .filter((s): s is string => typeof s === "string")
+    .map(clean)
+    .filter(Boolean);
 
 export function isLlmConfigured(): boolean {
   return Boolean(process.env.ANTHROPIC_API_KEY);
@@ -25,12 +34,12 @@ export class LlmNotConfiguredError extends Error {
   }
 }
 
-interface ToolUseBlock { type: string; name?: string; input?: unknown }
+interface TextBlock { type: string; text?: string }
 
 /**
  * Gera o briefing via Claude, ancorado no bloco DADOS (grounding) já montado.
- * Retorna o AthleteBrief validado. Lança se não configurado ou se a resposta
- * vier fora do contrato — o orquestrador captura e cai no determinístico.
+ * Usa JSON com prefill "{" (mais robusto que tool-use para este modelo — evita
+ * vazamento de sintaxe de ferramenta nos campos) + limpeza defensiva.
  */
 export async function generateBriefWithLlm(userInput: string): Promise<AthleteBrief> {
   const key = process.env.ANTHROPIC_API_KEY;
@@ -45,38 +54,40 @@ export async function generateBriefWithLlm(userInput: string): Promise<AthleteBr
     },
     body: JSON.stringify({
       model: process.env.ELEVO_AI_MODEL || DEFAULT_MODEL,
-      max_tokens: 900,
+      max_tokens: 1000,
       system: BRIEF_SYSTEM_PROMPT,
-      tools: [BRIEF_TOOL],
-      tool_choice: { type: "tool", name: BRIEF_TOOL.name },
-      messages: [{ role: "user", content: `DADOS:\n${userInput}` }],
+      messages: [
+        { role: "user", content: `DADOS:\n${userInput}` },
+        { role: "assistant", content: "{" }, // prefill: força JSON limpo
+      ],
     }),
   });
 
   if (!res.ok) {
     throw new Error(`Anthropic API ${res.status}: ${await res.text().catch(() => "")}`);
   }
-  const data = (await res.json()) as { content?: ToolUseBlock[] };
-  const block = data.content?.find((b) => b.type === "tool_use" && b.name === BRIEF_TOOL.name);
-  const input = block?.input as Record<string, unknown> | undefined;
-  if (!input || typeof input.headline !== "string") {
+  const data = (await res.json()) as { content?: TextBlock[] };
+  const text = data.content?.find((b) => b.type === "text")?.text ?? "";
+  const raw = "{" + text;
+  const jsonStr = raw.slice(0, raw.lastIndexOf("}") + 1);
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(jsonStr) as Record<string, unknown>;
+  } catch {
+    throw new Error("Resposta da IA não é JSON válido.");
+  }
+  if (typeof parsed.headline !== "string") {
     throw new Error("Resposta da IA fora do contrato.");
   }
-  // tolerante: o modelo às vezes devolve listas de 1 item como string
-  const toArr = (x: unknown): string[] =>
-    Array.isArray(x)
-      ? x.filter((s): s is string => typeof s === "string")
-      : typeof x === "string" && x.trim()
-        ? [x]
-        : [];
-  const str = (x: unknown, fallback: string): string => (typeof x === "string" && x.trim() ? x : fallback);
+  const str = (x: unknown, fallback: string): string => (typeof x === "string" && x.trim() ? clean(x) : fallback);
   return {
-    headline: input.headline,
-    focus: str(input.focus, "—"),
-    reading: str(input.reading, ""),
-    watch: toArr(input.watch),
-    evidence: toArr(input.evidence),
-    coachNote: str(input.coachNote, "O treino é a sua decisão."),
+    headline: clean(parsed.headline),
+    focus: str(parsed.focus, "—"),
+    reading: str(parsed.reading, ""),
+    watch: toArr(parsed.watch),
+    evidence: toArr(parsed.evidence),
+    coachNote: str(parsed.coachNote, "O treino é a sua decisão."),
     source: "ia",
   };
 }
