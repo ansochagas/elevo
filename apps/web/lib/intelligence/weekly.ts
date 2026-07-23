@@ -24,12 +24,13 @@ export async function getWeeklyBrief(a: AthleteDetail, now: Date): Promise<Athle
 
   const weekOf = weekOfMonday(now);
 
-  // 1) já temos a leitura desta semana?
+  // 1) já temos a leitura de IA desta semana? (só cache de IA conta — uma
+  //    falha eventual da IA nunca "gruda" a leitura base na semana inteira)
   try {
     const rows = await db
       .select({ brief: briefs.brief })
       .from(briefs)
-      .where(and(eq(briefs.userId, a.userId), eq(briefs.weekOf, weekOf)))
+      .where(and(eq(briefs.userId, a.userId), eq(briefs.weekOf, weekOf), eq(briefs.source, "ia")))
       .limit(1);
     if (rows[0]) return rows[0].brief as AthleteBrief;
   } catch {
@@ -37,15 +38,17 @@ export async function getWeeklyBrief(a: AthleteDetail, now: Date): Promise<Athle
     return generateAthleteBrief(a, now);
   }
 
-  // 2) gera (IA) e guarda para a semana
+  // 2) gera e guarda SOMENTE se veio da IA (fallback determinístico não cacheia)
   const brief = await generateAthleteBrief(a, now);
-  try {
-    await db
-      .insert(briefs)
-      .values({ userId: a.userId, weekOf, brief, source: brief.source })
-      .onConflictDoNothing({ target: [briefs.userId, briefs.weekOf] });
-  } catch {
-    // sem tabela: devolve a leitura mesmo sem cachear
+  if (brief.source === "ia") {
+    try {
+      await db
+        .insert(briefs)
+        .values({ userId: a.userId, weekOf, brief, source: brief.source })
+        .onConflictDoNothing({ target: [briefs.userId, briefs.weekOf] });
+    } catch {
+      // sem tabela: devolve a leitura mesmo sem cachear
+    }
   }
   return brief;
 }
