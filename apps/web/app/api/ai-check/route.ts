@@ -1,30 +1,29 @@
-// TEMP diagnóstico da camada de IA. NÃO expõe a chave — só booleano + status.
-// Remover após diagnosticar.
+// TEMP diagnóstico da camada de IA — chama a funcao real de briefing. Remover depois.
+import { generateBriefWithLlm } from "@/lib/intelligence/llm";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const SAMPLE = [
+  "ALUNO: Anderson · Team Leo",
+  "Runner Score: 520 (+20)",
+  "Foco sugerido: Regularidade (Iniciante)",
+  "ATRIBUTOS (0-100):",
+  "- Regularidade: 35 [Iniciante] — correu ~2,3 vezes por semana.",
+  "- Subida: 74 [Forte]",
+  "TREINO:",
+  "- Corridas válidas: 87",
+  "- Carga: volume 40% abaixo da média.",
+  "REGRAS (ciência curada):",
+  "- Constância é o que mais destrava a evolução geral.",
+].join("\n");
+
 export async function GET() {
-  const key = process.env.ANTHROPIC_API_KEY;
-  const model = process.env.ELEVO_AI_MODEL || "claude-sonnet-5";
-  if (!key) {
-    return Response.json({ keyPresent: false, model, hint: "ANTHROPIC_API_KEY ausente no runtime da Vercel" });
-  }
+  if (!process.env.ANTHROPIC_API_KEY) return Response.json({ keyPresent: false });
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-      body: JSON.stringify({ model, max_tokens: 16, messages: [{ role: "user", content: "ping" }] }),
-    });
-    const body = await res.text();
-    return Response.json({
-      keyPresent: true,
-      keyPrefix: key.slice(0, 7), // ex.: "sk-ant-" — confirma formato, não expõe a chave
-      model,
-      status: res.status,
-      ok: res.ok,
-      body: body.slice(0, 400),
-    });
+    const brief = await generateBriefWithLlm(SAMPLE);
+    return Response.json({ keyPresent: true, ok: true, brief });
   } catch (e) {
-    return Response.json({ keyPresent: true, model, error: String(e) });
+    return Response.json({ keyPresent: true, ok: false, error: e instanceof Error ? e.message : String(e) });
   }
 }
